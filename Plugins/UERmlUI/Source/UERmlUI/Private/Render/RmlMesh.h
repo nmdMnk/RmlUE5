@@ -1,10 +1,9 @@
-﻿#pragma once
-
-class FRmlTextureEntry;
+#pragma once
 
 namespace Rml
 {
 	struct Vertex;
+	template<typename T> class Span;
 }
 
 class FRmlMesh : public TSharedFromThis<FRmlMesh, ESPMode::ThreadSafe>
@@ -12,15 +11,15 @@ class FRmlMesh : public TSharedFromThis<FRmlMesh, ESPMode::ThreadSafe>
 public:
 	struct FVertexData
 	{
-		FVector2D	Position;
+		FVector2f	Position;
 		FColor		Color;
-		FVector2D	UV;
-		FVertexData(const FVector2D& InPos, const FVector2D& InUV, const FColor& InColor)
+		FVector2f	UV;
+		FVertexData(const FVector2f& InPos, const FVector2f& InUV, const FColor& InColor)
 			: Position(InPos), Color(InColor), UV(InUV)
 		{}
 	};
 
-	void Setup(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices, TSharedPtr<FRmlTextureEntry, ESPMode::ThreadSafe> InTexture);
+	void Setup(Rml::Span<const Rml::Vertex> InVertices, Rml::Span<const int> InIndices);
 	void BuildMesh();
 	void ReleaseMesh();
 	void DrawMesh(FRHICommandList& RHICmdList);
@@ -28,13 +27,11 @@ public:
 	static FVertexDeclarationRHIRef GetMeshDeclaration();
 public:
 	TResourceArray<FVertexData>		Vertices;
-	FVertexBufferRHIRef				VertexBufferRHI;
+	FBufferRHIRef					VertexBufferRHI;
 
 	TResourceArray<uint16>			Indices;
-	FIndexBufferRHIRef				IndexBufferRHI;
+	FBufferRHIRef					IndexBufferRHI;
 
 	int32							NumVertices;
 	int32							NumTriangles;
-
-	TSharedPtr<FRmlTextureEntry, ESPMode::ThreadSafe>			BoundTexture;
 };

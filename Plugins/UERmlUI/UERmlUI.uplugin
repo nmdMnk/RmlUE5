@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "1.0",
 	"FriendlyName": "UERmlUI",
-	"Description": "RmlUI for UE4",
+	"Description": "RmlUI for UE5",
 	"Category": "Other",
 	"CreatedBy": "BenzzZX",
 	"CreatedByURL": "",
@@ -17,7 +17,7 @@
 	"Modules": [
 		{
 			"Name": "RmlUI",
-			"Type": "Program",
+			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		},
 		{

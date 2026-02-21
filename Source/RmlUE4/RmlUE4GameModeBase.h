@@ -5,6 +5,7 @@
 #include "Examples/RmlBenchmark.h"
 #include "Examples/RmlDemo.h"
 #include "RmlUi/Core.h"
+#include "RmlInterface/UERmlFileInterface.h"
 #include "RmlInterface/UERmlRenderInterface.h"
 #include "RmlInterface/UERmlSystemInterface.h"
 #include "RmlUE4GameModeBase.generated.h"
@@ -31,6 +32,7 @@ private:
 	
 	// !End Event 
 private:
+	FUERmlFileInterface				RmlFileInterface;
 	FUERmlSystemInterface			RmlSystemInterface;
 	FUERmlRenderInterface			RmlRenderInterface;
 	Rml::Context*					Context;

@@ -66,7 +66,7 @@ void URmlBenchmark::Tick(float DeltaTime)
 
 		auto el = BoundDocument->GetElementById("fps");
 		count_frames = 0;
-		el->SetInnerRML(Rml::CreateString(20, "FPS: %f", fps_mean));
+		el->SetInnerRML(Rml::CreateString("FPS: %f", fps_mean));
 	}
 }
 
@@ -86,7 +86,6 @@ void URmlBenchmark::PerformanceTest()
 		int max = (rand() % 40) + 10;
 		int value = rand() % max;
 		Rml::String rml_row = Rml::CreateString(
-			1000,
 			R"(
 			<div class="row">
 				<div class="col col1"><button class="expand" index="%d">+</button>&nbsp;<a>Route %d</a></div>

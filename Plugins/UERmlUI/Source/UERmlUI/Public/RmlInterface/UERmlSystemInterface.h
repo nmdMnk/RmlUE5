@@ -17,7 +17,7 @@ protected:
 	virtual void SetMouseCursor(const Rml::String& cursor_name) override;
 	virtual void SetClipboardText(const Rml::String& text) override;
 	virtual void GetClipboardText(Rml::String& text) override;
-	virtual void ActivateKeyboard() override;
+	virtual void ActivateKeyboard(Rml::Vector2f caret_position, float line_height) override;
 	virtual void DeactivateKeyboard() override;
 	// ~End Rml::SystemInterface API
 private:

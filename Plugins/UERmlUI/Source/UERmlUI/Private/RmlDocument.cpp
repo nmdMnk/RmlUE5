@@ -20,7 +20,12 @@ bool URmlDocument::Init(Rml::Context* InCtx, const FString& InDocPath)
 	Rml::Factory::RegisterEventListenerInstancer(&Instancer);
 	
 	// load document 
-	BoundDocument = InCtx->LoadDocument(TCHAR_TO_UTF8(*InDocPath));
+	// Pass a path relative to the project dir so RmlUi's URL class never sees a
+	// Windows drive letter — it would encode "C:" as "C|", breaking all relative
+	// hrefs resolved from the document's base URL.
+	FString RelDocPath = InDocPath;
+	FPaths::MakePathRelativeTo(RelDocPath, *FPaths::ProjectDir());
+	BoundDocument = InCtx->LoadDocument(TCHAR_TO_UTF8(*RelDocPath));
 	if (!BoundDocument) return false;
 
 	// unregister event listener instancer 

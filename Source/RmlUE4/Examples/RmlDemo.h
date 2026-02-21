@@ -47,7 +47,7 @@ private:
 private:
 	Rml::ElementDocument *iframe = nullptr;
 	Rml::Element *gauge = nullptr, *progress_horizontal = nullptr;
-	Rml::SharedPtr<Rml::StyleSheet> rml_basic_style_sheet;
+	Rml::SharedPtr<Rml::StyleSheetContainer> rml_basic_style_sheet;
 
 	bool submitting = false;
 	double submitting_start_time = 0;

@@ -15,12 +15,13 @@ void ARmlUE4GameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// setup interface 
+	// Re-register all interfaces each PIE session.
+	// UERmlUI module calls Initialise() once at startup; we must NOT call it again.
+	// EndPlay nulls the interface pointers (to avoid dangling refs to our members),
+	// so we must re-register them here on every BeginPlay.
+	Rml::SetFileInterface(&RmlFileInterface);
 	Rml::SetSystemInterface(&RmlSystemInterface);
 	Rml::SetRenderInterface(&RmlRenderInterface);
-	
-	// init rml environment 
-	check(Rml::Initialise());
 
 	// load font face
 	FString FontPath = FPaths::ProjectContentDir() / TEXT("RmlAssets/assets/");
@@ -31,11 +32,18 @@ void ARmlUE4GameModeBase::BeginPlay()
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("NotoEmoji-Regular.ttf"))), true);
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("STKAITI.TTF"))), true);
 	
-	// create context 
-	Context = Rml::CreateContext("Test Context", Rml::Vector2i());
-
-	// setup context 
-	Context->SetDensityIndependentPixelRatio(1.0f);
+	// create context with initial viewport dimensions so percentage-based
+	// layouts (e.g. width: 80%) resolve correctly at document load time.
+	// SRmlWidget::OnPaint will set the actual dimensions on first paint.
+	Rml::Vector2i InitialDims(1920, 1080);
+	if (GEngine && GEngine->GameViewport)
+	{
+		FVector2D Vps;
+		GEngine->GameViewport->GetViewportSize(Vps);
+		if (!Vps.IsNearlyZero())
+			InitialDims = Rml::Vector2i((int)Vps.X, (int)Vps.Y);
+	}
+	Context = Rml::CreateContext("Test Context", InitialDims);
 
 	// init debugger 
 	// Rml::Debugger::Initialise(Context);
@@ -46,8 +54,10 @@ void ARmlUE4GameModeBase::BeginPlay()
 	// load demo selector 
 	FString BasePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / TEXT("RmlAssets/assets/Examples/"));
 	DemoSelector = NewObject<URmlDocument>(this);
-	DemoSelector->Init(Context, BasePath + TEXT("selectbar.rml"));
-	DemoSelector->Show();
+	if (DemoSelector->Init(Context, BasePath + TEXT("selectbar.rml")))
+	{
+		DemoSelector->Show();
+	}
 
 	// load demos
 	_LoadDemos(BasePath);
@@ -79,17 +89,20 @@ void ARmlUE4GameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 
-	// shut down documents
-	DemoSelector->ShutDown();
-	MainDemo->ShutDown();
-	BenchMark->ShutDown();
-	
+	// shut down documents (guard against failed Init())
+	if (DemoSelector) DemoSelector->ShutDown();
+	if (MainDemo) MainDemo->ShutDown();
+	if (BenchMark) BenchMark->ShutDown();
+
 	// release context
 	Rml::RemoveContext("Test Context");
 	Context = nullptr;
 
-	// shut down rml environment 
-	Rml::Shutdown();
+	// Null the interface pointers before GameMode members are destroyed.
+	// Do NOT call Rml::Shutdown() — the UERmlUI module owns the lifecycle.
+	Rml::SetFileInterface(nullptr);
+	Rml::SetSystemInterface(nullptr);
+	Rml::SetRenderInterface(nullptr);
 }
 
 void ARmlUE4GameModeBase::_LoadDemos(const FString& InBasePath)

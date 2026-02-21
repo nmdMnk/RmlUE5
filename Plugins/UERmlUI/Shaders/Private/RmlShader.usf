@@ -3,6 +3,7 @@
 Texture2D		InTexture;
 SamplerState	InTextureSampler;
 float4x4		InTransform;
+float			InPremulTexAlpha;
 
 struct InputVS
 {
@@ -29,7 +30,9 @@ OutputVS RmlShader_VS(InputVS In)
 
 	Out.Position = mul(float4(In.Position, 0, 1), InTransform);
 	Out.UV = In.UV;
-	Out.Color = In.Color;
+	// FColor memory layout is BGRA; VET_UByte4N reads as R8G8B8A8, so channels arrive
+	// swapped (byte0=B lands in shader.r). Swizzle back to correct RGBA order.
+	Out.Color = In.Color.bgra;
 
 	return Out;
 }
@@ -38,8 +41,11 @@ OutputPS RmlShader_PS(OutputVS In)
 {
 	OutputPS Out;
 
-	Out.Color = In.Color * InTexture.Sample(InTextureSampler, In.UV);
-	
+	float4 tex = InTexture.Sample(InTextureSampler, In.UV);
+	// InPremulTexAlpha: 0 = already premultiplied (font atlas/generated), 1 = needs shader premul (file/asset).
+	tex.rgb *= lerp(1.0, tex.a, InPremulTexAlpha);
+	Out.Color = In.Color * tex;
+
 	return Out;
 }
 

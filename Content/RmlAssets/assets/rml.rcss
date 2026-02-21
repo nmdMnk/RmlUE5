@@ -32,7 +32,7 @@ datagrid
 	display: block;
 }
 
-select, dataselect, datacombo
+select
 {
 	text-align: left;
 }

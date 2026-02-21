@@ -8,16 +8,16 @@
 			margin: auto;
 			width: 80%;
 			height: 80%;
-			min-width: 1030px;
-			min-height: 300px;
-			max-width: -1px;
-			max-height: -1px;
+			min-width: 1030dp;
+			min-height: 300dp;
+			max-width: -1dp;
+			max-height: -1dp;
 		}
 	</style>
 </head>
 <body class="window">
 	<div id="title_bar">
-		<handle move_target="#document">
+		<handle move_target="#document" edge_margin="none">
 			<div id="icon"></div>
 			<span id="title">Title</span>
 		</handle>
@@ -26,6 +26,6 @@
 		<div id="content">
 		</div>
 	</div>
-	<handle size_target="#document" style="position: absolute; width: 16px; height: 16px; bottom: 0px; right: 0px; cursor: resize;"></handle>
+	<handle size_target="#document" edge_margin="none" style="position: absolute; width: 16dp; height: 16dp; bottom: 0; right: 0; cursor: resize;"></handle>
 </body>
 </template>

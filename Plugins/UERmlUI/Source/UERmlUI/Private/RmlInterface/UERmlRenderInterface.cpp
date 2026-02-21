@@ -1,12 +1,15 @@
-﻿#include "RmlInterface/UERmlRenderInterface.h"
+#include "RmlInterface/UERmlRenderInterface.h"
 #include "Rendering/DrawElements.h"
 #include "Render/RmlDrawer.h"
 #include "Render/RmlMesh.h"
+#include "RmlUiSettings.h"
 #include "RmlUi/Core.h"
 #include "RmlHelper.h"
 
 FUERmlRenderInterface::FUERmlRenderInterface()
-	: AdditionRenderMatrix(FMatrix::Identity)
+	: AdditionRenderMatrix(FMatrix44f::Identity)
+	, bCustomMatrix(false)
+	, bUseClipRect(false)
 {
 }
 
@@ -33,26 +36,11 @@ void FUERmlRenderInterface::EndRender(FSlateWindowElementList& InCurrentElementL
 }
 
 Rml::CompiledGeometryHandle FUERmlRenderInterface::CompileGeometry(
-	Rml::Vertex* vertices,
-	int num_vertices,
-	int* indices,
-	int num_indices,
-	Rml::TextureHandle texture)
+	Rml::Span<const Rml::Vertex> vertices,
+	Rml::Span<const int> indices)
 {
-	// create mesh 
 	TSharedPtr<FRmlMesh, ESPMode::ThreadSafe> Mesh = MakeShared<FRmlMesh, ESPMode::ThreadSafe>();
-
-	// setup
-	Mesh->Setup(
-		vertices,
-		num_vertices,
-		indices,
-		num_indices,
-		texture ?
-			reinterpret_cast<FRmlTextureEntry*>(texture)->AsShared() :
-			TSharedPtr<FRmlTextureEntry, ESPMode::ThreadSafe>());
-
-	// build mesh
+	Mesh->Setup(vertices, indices);
 	Mesh->BuildMesh();
 	
 	// add to array
@@ -62,25 +50,27 @@ Rml::CompiledGeometryHandle FUERmlRenderInterface::CompileGeometry(
 	return reinterpret_cast<Rml::CompiledGeometryHandle>(Mesh.Get());
 }
 
-void FUERmlRenderInterface::RenderCompiledGeometry(Rml::CompiledGeometryHandle geometry,
-	const Rml::Vector2f& translation)
+void FUERmlRenderInterface::RenderGeometry(
+	Rml::CompiledGeometryHandle geometry,
+	Rml::Vector2f translation,
+	Rml::TextureHandle texture)
 {
 	check(CurrentDrawer.IsValid());
-	
-	FMatrix Matrix(FMatrix::Identity);
-	FIntRect ResultClipRect;
 
-	// local space -> Rml space  
+	// local space -> Rml space (apply translation)
+	FMatrix44f Matrix = FMatrix44f::Identity;
 	Matrix.M[3][0] = translation.x;
 	Matrix.M[3][1] = translation.y;
-	
-	// addition matrix 
+
+	// apply optional CSS transform
 	if (bCustomMatrix) { Matrix *= AdditionRenderMatrix; }
 
-	// Rml space -> NDC(Normalized Device Space) 
+	// Rml space -> NDC
 	Matrix *= RmlRenderMatrix;
 
-	// set up clip rect 
+	// ClipRect is in RmlUI context coordinates (logical pixels).
+	// AccumRT maps logical -> screen render space.
+	FIntRect ResultClipRect;
 	if (bUseClipRect)
 	{
 		// transform rect to slate render space 
@@ -97,86 +87,71 @@ void FUERmlRenderInterface::RenderCompiledGeometry(Rml::CompiledGeometryHandle g
 	}
 	else
 	{
-		// use screen scissor rect
-		ResultClipRect.Min.X = ViewportRect.Left;
-		ResultClipRect.Min.Y = ViewportRect.Top;
-		ResultClipRect.Max.X = ViewportRect.Right;
-		ResultClipRect.Max.Y = ViewportRect.Bottom;
+		ResultClipRect.Min.X = FMath::RoundToInt(ViewportRect.Left);
+		ResultClipRect.Min.Y = FMath::RoundToInt(ViewportRect.Top);
+		ResultClipRect.Max.X = FMath::RoundToInt(ViewportRect.Right);
+		ResultClipRect.Max.Y = FMath::RoundToInt(ViewportRect.Bottom);
 	}
 
-	// Emplace draw command 
-	CurrentDrawer->EmplaceMesh(reinterpret_cast<FRmlMesh*>(geometry)->AsShared(), Matrix, ResultClipRect);
+	FRmlTextureEntry* TextureEntry = texture ? reinterpret_cast<FRmlTextureEntry*>(texture) : nullptr;
+	CurrentDrawer->EmplaceMesh(
+		reinterpret_cast<FRmlMesh*>(geometry)->AsShared(),
+		TextureEntry,
+		Matrix,
+		ResultClipRect);
 }
 
-void FUERmlRenderInterface::ReleaseCompiledGeometry(Rml::CompiledGeometryHandle geometry)
+void FUERmlRenderInterface::ReleaseGeometry(Rml::CompiledGeometryHandle geometry)
 {
 	// remove geometry 
 	Meshes.RemoveSwap(reinterpret_cast<FRmlMesh*>(geometry)->AsShared());
 }
 
-bool FUERmlRenderInterface::LoadTexture(Rml::TextureHandle& texture_handle, Rml::Vector2i& texture_dimensions,
+Rml::TextureHandle FUERmlRenderInterface::LoadTexture(
+	Rml::Vector2i& texture_dimensions,
 	const Rml::String& source)
 {
 	FString Path(source.c_str());
 	auto FoundTexture = AllTextures.Find(Path);
 	if (FoundTexture)
 	{
-		// setup handle 
-		texture_handle = reinterpret_cast<Rml::TextureHandle>((*FoundTexture).Get());
-
-		// setup size 
 		texture_dimensions.x = (*FoundTexture)->BoundTexture->GetSurfaceWidth();
 		texture_dimensions.y = (*FoundTexture)->BoundTexture->GetSurfaceHeight();
-		return true;
+		return reinterpret_cast<Rml::TextureHandle>((*FoundTexture).Get());
+	}
+
+	// load from file or asset
+	UTexture2D* LoadedTexture = nullptr;
+	if (FPlatformFileManager::Get().GetPlatformFile().FileExists(*Path))
+	{
+		LoadedTexture = FRmlHelper::LoadTextureFromFile(Path);
 	}
 	else
 	{
-		// load texture 
-		UTexture2D* LoadedTexture = nullptr;
-
-		// load texture 
-		if (FPlatformFileManager::Get().GetPlatformFile().FileExists(*Path))
-		{
-			LoadedTexture = FRmlHelper::LoadTextureFromFile(Path);
-		}
-		else
-		{
-			LoadedTexture = FRmlHelper::LoadTextureFromAsset(Path);
-		}
-
-		// load failed
-		if (!LoadedTexture) return false;
-
-		// add to array 
-		auto& AddedTexture = AllTextures.Add(Path, MakeShared<FRmlTextureEntry, ESPMode::ThreadSafe>(LoadedTexture, Path));
-
-		// setup handle 
-		texture_handle = reinterpret_cast<Rml::TextureHandle>(AddedTexture.Get());
-
-		// setup size 
-		texture_dimensions.x = LoadedTexture->GetSurfaceWidth();
-		texture_dimensions.y = LoadedTexture->GetSurfaceHeight();			
-		return true;
+		LoadedTexture = FRmlHelper::LoadTextureFromAsset(Path);
 	}
-	
-	return true;
+
+	if (!LoadedTexture) return 0;
+
+	auto& AddedTexture = AllTextures.Add(Path, MakeShared<FRmlTextureEntry, ESPMode::ThreadSafe>(LoadedTexture, Path));
+	AddedTexture->bPremultiplied = false;
+	texture_dimensions.x = LoadedTexture->GetSurfaceWidth();
+	texture_dimensions.y = LoadedTexture->GetSurfaceHeight();
+	return reinterpret_cast<Rml::TextureHandle>(AddedTexture.Get());
 }
 
-bool FUERmlRenderInterface::GenerateTexture(Rml::TextureHandle& texture_handle, const Rml::byte* source,
-	const Rml::Vector2i& source_dimensions)
+Rml::TextureHandle FUERmlRenderInterface::GenerateTexture(
+	Rml::Span<const Rml::byte> source,
+	Rml::Vector2i source_dimensions)
 {
 	// load texture 
 	UTexture2D* Texture = FRmlHelper::LoadTextureFromRaw(
-		(const uint8*)source,
+		(const uint8*)source.data(),
 		FIntPoint(source_dimensions.x, source_dimensions.y));
 
-	// add to created array 
-	AllCreatedTextures.Add(MakeShared<FRmlTextureEntry, ESPMode::ThreadSafe>(Texture));
-
-	// set handle 
-	texture_handle = reinterpret_cast<Rml::TextureHandle>(AllCreatedTextures.Top().Get());
-
-	return true;
+	auto& Entry = AllCreatedTextures.Add_GetRef(MakeShared<FRmlTextureEntry, ESPMode::ThreadSafe>(Texture));
+	Entry->bPremultiplied = true;
+	return reinterpret_cast<Rml::TextureHandle>(Entry.Get());
 }
 
 void FUERmlRenderInterface::ReleaseTexture(Rml::TextureHandle texture)
@@ -195,58 +170,55 @@ void FUERmlRenderInterface::ReleaseTexture(Rml::TextureHandle texture)
 	}
 }
 
-void FUERmlRenderInterface::SetTransform(const Rml::Matrix4f* transform)
-{
-	if (transform)
-	{
-		memcpy(&AdditionRenderMatrix, transform->data(), sizeof(Rml::Matrix4f));
-		bCustomMatrix = true;
-	}
-	else
-	{
-		AdditionRenderMatrix = FMatrix::Identity;
-		bCustomMatrix = false;
-	}
-}
-
-void FUERmlRenderInterface::RenderGeometry(
-	Rml::Vertex* vertices,
-	int num_vertices,
-	int* indices,
-	int num_indices,
-	Rml::TextureHandle texture,
-	const Rml::Vector2f& translation)
-{
-	// we only use compile mode 
-	checkNoEntry();
-}
-
 void FUERmlRenderInterface::EnableScissorRegion(bool enable)
 {
 	bUseClipRect = enable;
 }
 
-void FUERmlRenderInterface::SetScissorRegion(int x, int y, int width, int height)
+void FUERmlRenderInterface::SetScissorRegion(Rml::Rectanglei region)
 {
-	ClipRect.Left = (float)FMath::Max(x, 0);
-	ClipRect.Top = (float)FMath::Max(y, 0);
-	ClipRect.Right = (float)x + width;
-	ClipRect.Bottom = (float)y + height;
+	ClipRect.Left   = (float)FMath::Max(region.Left(),   0);
+	ClipRect.Top    = (float)FMath::Max(region.Top(),    0);
+	ClipRect.Right  = (float)region.Right();
+	ClipRect.Bottom = (float)region.Bottom();
 }
+
+void FUERmlRenderInterface::SetTransform(const Rml::Matrix4f* transform)
+{
+	if (transform)
+	{
+		// Rml::Matrix4f is column-major; FMatrix44f is row-major.
+		// Raw memcpy effectively transposes (columns become rows).
+		// This is correct because HLSL mul(row_vector, row_major_matrix)
+		// produces the same result as mul(column_major_matrix, column_vector).
+		FMemory::Memcpy(&AdditionRenderMatrix, transform->data(), sizeof(float) * 16);
+		bCustomMatrix = true;
+	}
+	else
+	{
+		AdditionRenderMatrix = FMatrix44f::Identity;
+		bCustomMatrix = false;
+	}
+}
+
 
 TSharedPtr<FRmlDrawer, ESPMode::ThreadSafe> FUERmlRenderInterface::_AllocDrawer()
 {
+	const bool bMSAA = URmlUiSettings::Get()->bEnableMSAA;
+
 	// search free drawer 
 	for (auto& Drawer : AllDrawers)
 	{
 		if (Drawer->IsFree())
 		{
 			Drawer->MarkUsing();
+			Drawer->SetMSAA(bMSAA);
 			return Drawer;
 		}
 	}
 
 	// create new drawer 
 	AllDrawers.Add(MakeShared<FRmlDrawer, ESPMode::ThreadSafe>(true));
+	AllDrawers.Top()->SetMSAA(bMSAA);
 	return AllDrawers.Top();
 }

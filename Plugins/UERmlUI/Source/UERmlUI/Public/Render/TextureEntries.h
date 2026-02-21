@@ -1,8 +1,8 @@
-﻿#pragma once
+#pragma once
 #include "CoreMinimal.h"
 #include "UObject/GCObject.h"
 
-class FRHITexture2D;
+class FRHITexture;
 class UTexture;
 
 class FRmlTextureEntry : public FGCObject, public TSharedFromThis<FRmlTextureEntry, ESPMode::ThreadSafe>
@@ -10,9 +10,11 @@ class FRmlTextureEntry : public FGCObject, public TSharedFromThis<FRmlTextureEnt
 public:
 	FRmlTextureEntry(UTexture* InTexture = nullptr, FString InTexturePath = FString());
 	virtual ~FRmlTextureEntry();
-	virtual FRHITexture2D* GetTextureRHI();
+	virtual FRHITexture* GetTextureRHI();
 	virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
+	virtual FString GetReferencerName() const override { return TEXT("FRmlTextureEntry"); }
 public:
-	UTexture*		BoundTexture;
-	FString			TexturePath;
+	TObjectPtr<UTexture>	BoundTexture;
+	FString					TexturePath;
+	bool					bPremultiplied = false;
 };

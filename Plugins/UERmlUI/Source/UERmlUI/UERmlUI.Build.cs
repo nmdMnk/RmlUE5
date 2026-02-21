@@ -22,6 +22,7 @@ public class UERmlUI : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
+				"DeveloperSettings",
 				"Slate",
 				"SlateCore",
 				"ApplicationCore" ,
@@ -29,6 +30,7 @@ public class UERmlUI : ModuleRules
 				"RenderCore" ,
 				"InputCore" ,
 				"ImageWrapper" ,
+				"UMG" ,
 			});
 	}
 }

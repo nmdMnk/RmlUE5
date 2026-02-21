@@ -2,6 +2,7 @@
 #include "RmlUi/Core.h"
 #include "IImageWrapperModule.h"
 #include "IImageWrapper.h"
+#include "TextureResource.h"
 
 Rml::Input::KeyIdentifier FRmlHelper::ConvertKey(FKey InKey)
 {
@@ -136,6 +137,9 @@ UTexture2D* FRmlHelper::LoadTextureFromRaw(const uint8* InSource, FIntPoint InSi
 {
 	// create texture 
 	UTexture2D* Texture = UTexture2D::CreateTransient(InSize.X, InSize.Y, EPixelFormat::PF_R8G8B8A8);
+	Texture->SRGB = false;
+	Texture->Filter = TF_Bilinear;
+	Texture->NeverStream = true;
 	Texture->UpdateResource();
 
 	// create region
@@ -155,7 +159,7 @@ UTexture2D* FRmlHelper::LoadTextureFromRaw(const uint8* InSource, FIntPoint InSi
 	// clean up function 
 	auto DataCleanup = [](uint8* Data, const FUpdateTextureRegion2D* UpdateRegion)
 	{
-		delete Data;
+		delete[] Data;
 		delete UpdateRegion;
 	};
 
@@ -188,6 +192,9 @@ UTexture2D* FRmlHelper::LoadTextureFromFile(const FString& InFilePath)
 
 	// create texture 
 	UTexture2D* LoadedTexture = UTexture2D::CreateTransient(Size.X, Size.Y, EPixelFormat::PF_R8G8B8A8);
+	LoadedTexture->SRGB = false;
+	LoadedTexture->Filter = TF_Bilinear;
+	LoadedTexture->NeverStream = true;
 	LoadedTexture->UpdateResource();
 
 	// set up region 
@@ -213,6 +220,17 @@ UTexture2D* FRmlHelper::LoadTextureFromFile(const FString& InFilePath)
 UTexture2D* FRmlHelper::LoadTextureFromAsset(const FString& InAssetPath, UObject* InOuter)
 {
 	UObject* LoadedObj = StaticLoadObject(UObject::StaticClass(), InOuter, *InAssetPath);
-	return LoadedObj ? (UTexture2D*)LoadedObj : nullptr;
+	UTexture2D* Tex = Cast<UTexture2D>(LoadedObj);
+	if (!Tex) return nullptr;
+
+#if WITH_EDITOR
+	// Wait for DDC to finish deriving PlatformData — without this the first
+	// editor launch races and produces a corrupted GPU texture.
+	Tex->FinishCachePlatformData();
+#endif
+
+	Tex->UpdateResource();
+
+	return Tex;
 }
 

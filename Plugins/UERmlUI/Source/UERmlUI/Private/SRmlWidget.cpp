@@ -1,8 +1,6 @@
 ﻿#include "SRmlWidget.h"
 #include "RmlHelper.h"
 #include "RmlInterface/UERmlSystemInterface.h"
-#include "Widgets/Images/SImage.h"
-#include "Widgets/Layout/SConstraintCanvas.h"
 #include "RmlUi/Core.h"
 
 void SRmlWidget::Construct(const FArguments& InArgs)
@@ -67,23 +65,23 @@ int32 SRmlWidget::OnPaint(
 	FUERmlRenderInterface* RenderInterface = (FUERmlRenderInterface*)Rml::GetRenderInterface();
 
 	// get render transform
-	auto RenderTransform = AllottedGeometry.GetAccumulatedRenderTransform();
+	const FSlateRenderTransform& RenderTransform = AllottedGeometry.GetAccumulatedRenderTransform();
 	
 	// rml local space -> slate render space 
-	FMatrix RenderMatrix(RenderTransform.To3DMatrix());
+	FMatrix44f RenderMatrix(RenderTransform.To3DMatrix());
 
 	// slate render space -> NDC(Normalized Device Space)
 	FVector2D Size = OutDrawElements.GetPaintWindow()->GetSizeInScreen();
-	RenderMatrix *= FMatrix(
-			FPlane(2.0f / Size.X,0.0f,			0.0f,		0.0f),
-			FPlane(0.0f,			-2.0f / Size.Y,	0.0f,		0.0f),
-			FPlane(0.0f,			0.0f,			1.f / 5000.f,0.0f),
-			FPlane(-1,			1,				0.5f,		1.0f));
+	RenderMatrix *= FMatrix44f(
+		FPlane4f( 2.0f / Size.X,  0.0f,      0.0f,           0.0f),
+		FPlane4f( 0.0f,     -2.0f / Size.Y,  0.0f,           0.0f),
+		FPlane4f( 0.0f,      0.0f,      1.0f / 5000.0f, 0.0f),
+		FPlane4f(-1.0f,      1.0f,      0.5f,            1.0f));
 
 	// begin render
 	RenderInterface->BeginRender(
-		RenderTransform ,
-		RenderMatrix ,
+		RenderTransform,
+		RenderMatrix,
 		MyCullingRect);
 	
 	// call render api 

@@ -64,8 +64,8 @@ void URmlDemo::OnInit()
 		Rml::StreamMemory stream((Rml::byte*)style_sheet_content.data(), style_sheet_content.size());
 		stream.SetSourceURL("sandbox://default_rcss");
 
-		rml_basic_style_sheet = Rml::MakeShared<Rml::StyleSheet>();
-		rml_basic_style_sheet->LoadStyleSheet(&stream);
+		rml_basic_style_sheet = Rml::MakeShared<Rml::StyleSheetContainer>();
+		rml_basic_style_sheet->LoadStyleSheetContainer(&stream);
 	}
 
 	// Add sandbox style sheet text.
@@ -106,8 +106,8 @@ void URmlDemo::Tick(float DeltaTime)
 		float value_mapped = value_begin + value_gauge * (value_end - value_begin);
 		gauge->SetAttribute("value", value_mapped);
 
-		auto value_gauge_str = CreateString(10, "%d %%", Math::RoundToInteger(value_gauge * 100.f));
-		auto value_horizontal_str = CreateString(10, "%d %%", Math::RoundToInteger(value_horizontal * 100.f));
+		auto value_gauge_str = CreateString("%d %%", Math::RoundToInteger(value_gauge * 100.f));
+		auto value_horizontal_str = CreateString("%d %%", Math::RoundToInteger(value_horizontal * 100.f));
 
 		if (auto el_value = BoundDocument->GetElementById("gauge_value"))
 			el_value->SetInnerRML(value_gauge_str);
@@ -169,7 +169,7 @@ void URmlDemo::change_color()
 	using namespace Rml;
 	auto element = CurrentEvent->GetCurrentElement();
 	Colourb color((byte)Math::RandomInteger(255), (byte)Math::RandomInteger(255), (byte)Math::RandomInteger(255));
-	element->Animate("image-color", Property(color, Property::COLOUR), tweening_parameters.duration, Tween(tweening_parameters.type, tweening_parameters.direction));
+	element->Animate("image-color", Property(color, Unit::COLOUR), tweening_parameters.duration, Tween(tweening_parameters.type, tweening_parameters.direction));
 	CurrentEvent->StopPropagation();
 }
 
@@ -236,7 +236,7 @@ void URmlDemo::tween_duration()
 	float value = (float)std::atof(static_cast<Rml::ElementFormControl*>(element)->GetValue().c_str());
 	tweening_parameters.duration = value;
 	if (auto el_duration = element->GetElementById("duration"))
-		el_duration->SetInnerRML(CreateString(20, "%2.2f", value));
+		el_duration->SetInnerRML(CreateString("%2.2f", value));
 }
 
 void URmlDemo::rating()
@@ -266,7 +266,7 @@ void URmlDemo::rating()
 		else
 			emoji = emojis[Champion];
 
-		el_rating->SetInnerRML(Rml::CreateString(30, "%d%%", value));
+		el_rating->SetInnerRML(Rml::CreateString("%d%%", value));
 		el_rating_emoji->SetInnerRML(emoji);
 	}
 }
@@ -326,13 +326,13 @@ void URmlDemo::SetSandboxStylesheet(const Rml::String& string)
 {
 	if (iframe && rml_basic_style_sheet)
 	{
-		auto style = Rml::MakeShared<Rml::StyleSheet>();
+		auto style = Rml::MakeShared<Rml::StyleSheetContainer>();
 		Rml::StreamMemory stream((const Rml::byte*)string.data(), string.size());
 		stream.SetSourceURL("sandbox://rcss");
 
-		style->LoadStyleSheet(&stream);
-		style = rml_basic_style_sheet->CombineStyleSheet(*style);
-		iframe->SetStyleSheet(style);
+		style->LoadStyleSheetContainer(&stream);
+		style = rml_basic_style_sheet->CombineStyleSheetContainer(*style);
+		iframe->SetStyleSheetContainer(style);
 	}
 }
 

@@ -1,8 +1,9 @@
-﻿#pragma once
+#pragma once
 #include "CoreMinimal.h"
 #include "GlobalShader.h"
 #include "ShaderParameterUtils.h"
 #include "ShaderParameterStruct.h"
+#include "DataDrivenShaderPlatformInfo.h"
 
 class FRmlShaderVs : public FGlobalShader
 {
@@ -17,21 +18,20 @@ public:
 		InTransform.Bind(Initializer.ParameterMap, TEXT("InTransform"));
 	}
 
-	void SetParameters(FRHICommandList& RHICmdList, const FMatrix& TransformValue)
+	void SetParameters(FRHICommandList& RHICmdList, const FMatrix44f& TransformValue)
 	{
-		SetShaderValue(RHICmdList, RHICmdList.GetBoundVertexShader(), InTransform, TransformValue);
+		FRHIBatchedShaderParameters& BatchedParameters = RHICmdList.GetScratchShaderParameters();
+		SetShaderValue(BatchedParameters, InTransform, TransformValue);
+		RHICmdList.SetBatchedShaderParameters(RHICmdList.GetBoundVertexShader(), BatchedParameters);
 	}
 
-	static bool ShouldCompilePermutation(
-        const FGlobalShaderPermutationParameters& Parameters)
+	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
 	{
 		return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
 	}
-	static void ModifyCompilationEnvironment(
-        const FGlobalShaderPermutationParameters& Parameters,
-        FShaderCompilerEnvironment& OutEnvironment)
+	static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
 	{
-		FGlobalShader::ModifyCompilationEnvironment(Parameters,OutEnvironment);
+		FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
 	}
 private:
 	LAYOUT_FIELD(FShaderParameter, InTransform)
@@ -49,29 +49,30 @@ public:
 	{
 		InTexture.Bind(Initializer.ParameterMap, TEXT("InTexture"));
 		InTextureSampler.Bind(Initializer.ParameterMap, TEXT("InTextureSampler"));
+		InPremulTexAlpha.Bind(Initializer.ParameterMap, TEXT("InPremulTexAlpha"));
 	}
-	
-	static bool ShouldCompilePermutation(
-        const FGlobalShaderPermutationParameters& Parameters)
+
+	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
 	{
 		return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
 	}
-	static void ModifyCompilationEnvironment(
-        const FGlobalShaderPermutationParameters& Parameters,
-        FShaderCompilerEnvironment& OutEnvironment)
+	static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
 	{
-		FGlobalShader::ModifyCompilationEnvironment(Parameters,OutEnvironment);
+		FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
 	}
 
-	template<typename TShaderRHIParamRef>
-    void SetParameters(FRHICommandListImmediate& RHICmdList, const TShaderRHIParamRef ShaderRHI, FRHITexture2D* SourceTexture)
+	void SetParameters(FRHICommandList& RHICmdList, FRHIPixelShader* ShaderRHI, FRHITexture* SourceTexture, float PremulTexAlpha = 0.0f)
 	{
-		SetTextureParameter(RHICmdList, ShaderRHI, InTexture, SourceTexture);
-		RHICmdList.SetShaderSampler(ShaderRHI, InTextureSampler.GetBaseIndex(), TStaticSamplerState<SF_Bilinear, AM_Wrap, AM_Wrap, AM_Wrap>::GetRHI());
+		FRHIBatchedShaderParameters& BatchedParameters = RHICmdList.GetScratchShaderParameters();
+		SetTextureParameter(BatchedParameters, InTexture, SourceTexture);
+		SetSamplerParameter(BatchedParameters, InTextureSampler, TStaticSamplerState<SF_Bilinear, AM_Wrap, AM_Wrap, AM_Wrap>::GetRHI());
+		SetShaderValue(BatchedParameters, InPremulTexAlpha, PremulTexAlpha);
+		RHICmdList.SetBatchedShaderParameters(ShaderRHI, BatchedParameters);
 	}
 private:
 	LAYOUT_FIELD(FShaderResourceParameter, InTexture)
 	LAYOUT_FIELD(FShaderResourceParameter, InTextureSampler)
+	LAYOUT_FIELD(FShaderParameter, InPremulTexAlpha)
 };
 
 class FRmlShaderPsNoTex : public FGlobalShader
@@ -82,19 +83,15 @@ public:
 	{ }
 
 	FRmlShaderPsNoTex(const ShaderMetaType::CompiledShaderInitializerType& Initializer)
-        : FGlobalShader(Initializer)
-	{
-	}
-	
-	static bool ShouldCompilePermutation(
-        const FGlobalShaderPermutationParameters& Parameters)
+		: FGlobalShader(Initializer)
+	{}
+
+	static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
 	{
 		return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
 	}
-	static void ModifyCompilationEnvironment(
-        const FGlobalShaderPermutationParameters& Parameters,
-        FShaderCompilerEnvironment& OutEnvironment)
+	static void ModifyCompilationEnvironment(const FGlobalShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment)
 	{
-		FGlobalShader::ModifyCompilationEnvironment(Parameters,OutEnvironment);
+		FGlobalShader::ModifyCompilationEnvironment(Parameters, OutEnvironment);
 	}
 };

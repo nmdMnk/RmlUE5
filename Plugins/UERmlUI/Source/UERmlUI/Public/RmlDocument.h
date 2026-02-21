@@ -15,16 +15,17 @@ class UERMLUI_API URmlDocument
 {
 	GENERATED_BODY()
 public:
+	using UObject::ProcessEvent;
 	bool Init(Rml::Context* InCtx, const FString& InDocPath);
 	void ShutDown();
 
 	Rml::ElementDocument* GetDocument() const { return BoundDocument; }
 
 	UFUNCTION()
-	void Show() { BoundDocument->Show(); }
+	void Show() { if (BoundDocument) BoundDocument->Show(); }
 
 	UFUNCTION()
-	void Hide() { BoundDocument->Hide(); }
+	void Hide() { if (BoundDocument) BoundDocument->Hide(); }
 	
 	void SetNotifyObject(const FString& InName, UObject* InObject) { EventNotifyMap.Add(InName, InObject); }
 protected:

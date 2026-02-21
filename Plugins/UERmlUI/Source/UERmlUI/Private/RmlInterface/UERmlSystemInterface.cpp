@@ -128,7 +128,7 @@ void FUERmlSystemInterface::GetClipboardText(Rml::String& text)
 	FTCHARToUTF8_Convert::Convert(const_cast<char*>(text.c_str()), text.size(), *Result, Result.Len());
 }
 
-void FUERmlSystemInterface::ActivateKeyboard()
+void FUERmlSystemInterface::ActivateKeyboard(Rml::Vector2f caret_position, float line_height)
 {
 	// 激活输入法 
 }
