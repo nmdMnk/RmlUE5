@@ -80,16 +80,16 @@
 				checkbox-checked-hover: 437px 90px 30px 30px;
 				checkbox-checked-active: 467px 90px 30px 30px;
 				
-				datagridheader-l: 127px 192px 16px 31px;
-				datagridheader-c: 143px 192px 2px 31px;
-				datagridheader-r: 145px 192px 15px 31px;
+				tableheader-l: 127px 192px 16px 31px;
+				tableheader-c: 143px 192px 2px 31px;
+				tableheader-r: 145px 192px 15px 31px;
 				
-				datagridexpand: 3px 232px 17px 17px;
-				datagridexpand-hover: 21px 232px 17px 17px;
-				datagridexpand-active: 39px 232px 17px 17px;
-				datagridexpand-collapsed: 3px 250px 17px 17px;
-				datagridexpand-collapsed-hover: 21px 250px 17px 17px;
-				datagridexpand-collapsed-active: 39px 250px 17px 17px;
+				expand: 3px 232px 17px 17px;
+				expand-hover: 21px 232px 17px 17px;
+				expand-active: 39px 232px 17px 17px;
+				expand-collapsed: 3px 250px 17px 17px;
+				expand-collapsed-hover: 21px 250px 17px 17px;
+				expand-collapsed-active: 39px 250px 17px 17px;
 				
 				slidertrack-t: 70px 199px 27px 2px;
 				slidertrack-c: 70px 201px 27px 1px;
@@ -136,19 +136,20 @@
 			body
 			{
 				position: absolute;
-				width: 200px;
+				z-index: 1;
+				width: 200dp;
 				height: 100%;
-				transform: translateX(-90%);
-				transition: background-color transform 0.6s sine-in-out;
+				left: -180dp;
+				transition: background-color 0.6s sine-in-out, left 0.6s sine-in-out;
 				background-color: rgb(120,0,56);
 			}
 			body:hover
 			{
 				position: absolute;
-				width: 200px;
+				width: 200dp;
 				height: 100%;
-				transform: translateX(0);
-				transition: background-color transform 0.6s sine-in-out;
+				left: 0dp;
+				transition: background-color 0.6s sine-in-out, left 0.6s sine-in-out;
 				background-color: rgb(160,40,56);
 			}
 			div.btnContainer
@@ -158,31 +159,50 @@
 				width: 80%;
 				margin: auto;
 				top: 50%;
-				font-family: Delicious;
+				font-family: LatoLatin;
+				/* translateY(-50%) is safe here: height is auto/content (dp buttons),
+				   only changes on dp_ratio change which fires OnDpRatioChangeRecursive. */
 				transform: translateY(-50%);
 			}
 			button,
 			input.submit
 			{
-				display: inline-block;
-			
+				display: block;
+				box-sizing: border-box;
+
 				width: 100%;
-				height: 60px;
-			
-				font-family: Delicious;
-				font-size: 30px;
-				text-align: center;
-				vertical-align: middle;
-				padding-top: 15px;
-				
+				height: 60dp;
+
+				font-family: LatoLatin;
+				font-size: 30dp;
+				padding-top: 10dp;
+				padding-left: 12dp;
+				padding-right: 12dp;
+
 				decorator: image(button);
 			}
-			
-			button:focus,
-			input.submit:focus
+			button > span,
+			input.submit > span
 			{
-				font-weight: bold;
-				font-effect: shadow(2px 2px black);
+				display: block;
+				box-sizing: border-box;
+				width: 100%;
+				text-align: center;
+				white-space: nowrap;
+				overflow-x: hidden;
+				text-overflow: ellipsis;
+			}
+			button.two-line,
+			input.two-line
+			{
+				line-height: 30dp;
+				padding-top: 0;
+			}
+			button.two-line > span,
+			input.two-line > span
+			{
+				white-space: normal;
+				overflow-x: visible;
 			}
 			
 			button:hover,
@@ -200,8 +220,15 @@
 	</head>
 	<body>
 		<div id="DemoList" class="btnContainer">
-			<button onclick="Controller:OpenDemo">Demo</button>
-			<button onclick="Controller:OpenBenchMark">Benchmark</button>
+			<button onclick="Controller:OpenDemo"><span>Demo</span></button>
+			<button onclick="Controller:OpenBenchMark"><span>Benchmark</span></button>
+			<button onclick="Controller:OpenAnimation"><span>Animation</span></button>
+			<button onclick="Controller:OpenTransform"><span>Transform</span></button>
+			<button onclick="Controller:OpenSprites"><span>Sprites</span></button>
+			<button onclick="Controller:OpenEffects"><span>Effects</span></button>
+			<button onclick="Controller:OpenDrag"><span>Drag</span></button>
+			<button onclick="Controller:OpenDataBinding"><span>Data Binding</span></button>
+			<button onclick="Controller:OpenMockupInventory"><span>Inventory</span></button>
 		</div>
 	</body>
 </rml>

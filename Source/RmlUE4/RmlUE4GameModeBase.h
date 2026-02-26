@@ -1,14 +1,22 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "SRmlWidget.h"
-#include "Examples/RmlBenchmark.h"
-#include "Examples/RmlDemo.h"
-#include "RmlUi/Core.h"
 #include "RmlInterface/UERmlFileInterface.h"
 #include "RmlInterface/UERmlRenderInterface.h"
 #include "RmlInterface/UERmlSystemInterface.h"
 #include "RmlUE4GameModeBase.generated.h"
+
+class SRmlWidget;
+class URmlDocument;
+class URmlDemo;
+class URmlBenchmark;
+class URmlAnimation;
+class URmlTransform;
+class URmlEffects;
+class URmlDrag;
+class URmlDataBinding;
+class URmlMockupInventory;
+namespace Rml { class Context; }
 
 UCLASS()
 class RMLUE4_API ARmlUE4GameModeBase : public AGameModeBase
@@ -16,36 +24,74 @@ class RMLUE4_API ARmlUE4GameModeBase : public AGameModeBase
 	GENERATED_BODY()
 public:
 	ARmlUE4GameModeBase();
-	
+
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 private:
 	void _LoadDemos(const FString& InBasePath);
 	void _ChangeShowItem(URmlDocument* InDocument);
-	
+	static void _SetDocumentTitle(URmlDocument* InDocument);
+
 	// !Begin Event
 	UFUNCTION()
-	void OpenDemo() { _ChangeShowItem(MainDemo); }
+	void OpenDemo();
 	UFUNCTION()
-    void OpenBenchMark() { _ChangeShowItem(BenchMark); }
-	
-	// !End Event 
-private:
-	FUERmlFileInterface				RmlFileInterface;
-	FUERmlSystemInterface			RmlSystemInterface;
-	FUERmlRenderInterface			RmlRenderInterface;
-	Rml::Context*					Context;
+	void OpenBenchMark();
+	UFUNCTION()
+	void OpenAnimation();
+	UFUNCTION()
+	void OpenTransform();
+	UFUNCTION()
+	void OpenSprites();
+	UFUNCTION()
+	void OpenEffects();
+	UFUNCTION()
+	void OpenDrag();
+	UFUNCTION()
+	void OpenDataBinding();
+	UFUNCTION()
+	void OpenMockupInventory();
+	UFUNCTION()
+	void CloseDemo();
+	// !End Event
+
+	FUERmlFileInterface			RmlFileInterface;
+	FUERmlSystemInterface		RmlSystemInterface;
+	FUERmlRenderInterface		RmlRenderInterface;
+	Rml::Context*				Context;
+	TSharedPtr<SRmlWidget>		RmlWidget;
 
 	UPROPERTY()
-	URmlDocument*					DemoSelector;
+	TObjectPtr<URmlDocument>	DemoSelector;
 
 	UPROPERTY()
-	URmlDemo*						MainDemo;
+	TObjectPtr<URmlDemo>		MainDemo;
 
 	UPROPERTY()
-	URmlBenchmark*					BenchMark;
-	
+	TObjectPtr<URmlBenchmark>	BenchMark;
+
 	UPROPERTY()
-	URmlDocument*					CurrentElement;
+	TObjectPtr<URmlAnimation>	Animation;
+
+	UPROPERTY()
+	TObjectPtr<URmlTransform>	Transform;
+
+	UPROPERTY()
+	TObjectPtr<URmlDocument>	Sprites;
+
+	UPROPERTY()
+	TObjectPtr<URmlEffects>		Effects;
+
+	UPROPERTY()
+	TObjectPtr<URmlDrag>		Drag;
+
+	UPROPERTY()
+	TObjectPtr<URmlDataBinding>	DataBinding;
+
+	UPROPERTY()
+	TObjectPtr<URmlMockupInventory>	MockupInventory;
+
+	UPROPERTY()
+	TObjectPtr<URmlDocument>	CurrentElement;
 };

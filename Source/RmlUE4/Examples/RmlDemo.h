@@ -7,13 +7,13 @@ UCLASS()
 class URmlDemo : public URmlDocument
 {
 	GENERATED_BODY()
-public:
 protected:
 	// ~Begin URmlDocument API
 	virtual void OnInit() override;
+	virtual void OnKeyDown() override;
 	virtual void Tick(float DeltaTime) override;
-	// ~End URmlDocument API 
-	
+	// ~End URmlDocument API
+
 	// !Begin Events
 	UFUNCTION()
 	void exit();
@@ -28,7 +28,7 @@ protected:
 	UFUNCTION()
 	void tween_function();
 	UFUNCTION()
-    void tween_direction();
+	void tween_direction();
 	UFUNCTION()
 	void tween_duration();
 	UFUNCTION()
@@ -44,12 +44,12 @@ private:
 	void SubmitForm(Rml::String in_submit_message);
 	void SetSandboxStylesheet(const Rml::String& string);
 	void SetSandboxBody(const Rml::String& string);
-private:
+
 	Rml::ElementDocument *iframe = nullptr;
 	Rml::Element *gauge = nullptr, *progress_horizontal = nullptr;
 	Rml::SharedPtr<Rml::StyleSheetContainer> rml_basic_style_sheet;
 
-	bool submitting = false;
+	bool bSubmitting = false;
 	double submitting_start_time = 0;
 	Rml::String submit_message;
 };

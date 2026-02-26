@@ -5,11 +5,12 @@
 	<style>
 		body.window
 		{
-			width: 80%;
-			height: 80%;
-			margin: auto;
 			max-width: 2000dp;
 			max-height: 2000dp;
+			left: 80dp;
+			right: 80dp;
+			top: 50dp;
+			bottom: 50dp;
 			perspective: 3000dp;
 			/*opacity: 0;*/
 		}

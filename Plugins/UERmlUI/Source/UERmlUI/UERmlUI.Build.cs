@@ -8,6 +8,10 @@ public class UERmlUI : ModuleRules
 	public UERmlUI(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+		// Always optimize our integration code — even in DebugGame.
+		// InNonDebugBuilds does NOT cover DebugGame for project plugins.
+		OptimizeCode = CodeOptimization.Always;
 		
 		PublicDependencyModuleNames.AddRange(
 			new string[]

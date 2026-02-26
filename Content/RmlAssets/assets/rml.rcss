@@ -27,11 +27,6 @@ strong
 	font-weight: bold;
 }
 
-datagrid
-{
-	display: block;
-}
-
 select
 {
 	text-align: left;

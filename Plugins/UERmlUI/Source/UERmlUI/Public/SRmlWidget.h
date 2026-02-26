@@ -1,22 +1,25 @@
 ﻿#pragma once
-#include "RmlInterface/UERmlRenderInterface.h"
-#include "RmlUi/Core.h"
 #include "Widgets/SLeafWidget.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
+#include "RmlUi/Core.h"
+#include "RmlInterface/UERmlSystemInterface.h"
+
+class FUERmlRenderInterface;
 
 class UERMLUI_API SRmlWidget : public SLeafWidget
 {
 	SLATE_BEGIN_ARGS(SRmlWidget)
 		: _InitContext(nullptr)
+		, _InitSystemInterface(nullptr)
 		, _InitEnableRml(true)
 	{}
 		SLATE_ARGUMENT(Rml::Context*, InitContext)
+		SLATE_ARGUMENT(FUERmlSystemInterface*, InitSystemInterface)
 		SLATE_ARGUMENT(bool, InitEnableRml)
 	SLATE_END_ARGS()
 public:
 	void Construct(const FArguments& InArgs);
 
-	// widget functional 
 	bool AddToViewport(UWorld* InWorld, int32 ZOrder = 0);
 	bool RemoveFromParent(UWorld* InWorld);
 	
@@ -35,14 +38,39 @@ protected:
 
 	virtual FReply OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
+	virtual FReply OnMouseButtonDoubleClick(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual FReply OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 	virtual FReply OnMouseWheel(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 
 	virtual FCursorReply OnCursorQuery(const FGeometry& MyGeometry, const FPointerEvent& CursorEvent) const override;
+	virtual void OnMouseCaptureLost(const FCaptureLostEvent& CaptureLostEvent) override;
 
 	virtual bool SupportsKeyboardFocus() const override { return true; }
 	// ~End SWidget API
 private:
 	bool					bEnableRml;
 	Rml::Context*			BoundContext;
+	FUERmlSystemInterface*	CachedSystemInterface = nullptr;
+	bool					bNeedsWarmupSettle = true;
+	// Cached DPI scale — initialized to 0 so the first Tick always calls
+	// SetDensityIndependentPixelRatio, even if context size didn't change
+	// (e.g. warmup set the exact same dimensions as the first physical size).
+	float					CachedDPIScale = 0.0f;
+	// Set to true in OnMouseButtonUp when releasing capture while the cursor is
+	// still over the widget. Tells OnMouseCaptureLost to skip ProcessMouseLeave
+	// so hover state stays valid for the next rapid click. Set to false when the
+	// cursor was dragged outside before release — ProcessMouseLeave fires normally
+	// to clear stale :hover/:active pseudo-classes.
+	bool					bReleasingCapture = false;
+
+	// Context-level scaling state — when a document with ui_base_width is visible,
+	// the context is extended to cover the full viewport (in logical coords) and
+	// the Slate render transform applies the remaining sub-1.0 scale. The scaled
+	// document is CSS-positioned centered within the extended context; non-scaled
+	// documents fill the full context naturally (= full viewport).
+	float					ActiveUiScale = 1.0f;
+	Rml::Vector2i			ViewportPhysSize{0, 0};
+	// Cached at Construct() — Rml::GetRenderInterface() is global and invariant
+	// after Rml::Initialise(). Avoids repeated static_cast every paint/tick.
+	FUERmlRenderInterface*	CachedRenderInterface = nullptr;
 };

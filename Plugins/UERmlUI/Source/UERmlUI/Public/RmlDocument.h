@@ -19,6 +19,15 @@ public:
 	bool Init(Rml::Context* InCtx, const FString& InDocPath);
 	void ShutDown();
 
+	/**
+	 * Close the document and reload it from disk, then call OnInit() again.
+	 * Preserves visibility state. Subclasses with extra documents should
+	 * override OnPreReload() to close them before the reload happens.
+	 * Call Rml::Factory::ClearStyleSheetCache() before if RCSS changes are involved.
+	 * Returns false if re-init fails (document remains closed).
+	 */
+	bool Reload();
+
 	Rml::ElementDocument* GetDocument() const { return BoundDocument; }
 
 	UFUNCTION()
@@ -26,28 +35,32 @@ public:
 
 	UFUNCTION()
 	void Hide() { if (BoundDocument) BoundDocument->Hide(); }
-	
-	void SetNotifyObject(const FString& InName, UObject* InObject) { EventNotifyMap.Add(InName, InObject); }
+
+	void SetNotifyObject(const FString& InName, UObject* InObject) { EventNotifyMap.Add(InName, TObjectPtr<UObject>(InObject)); }
 protected:
 	virtual void OnInit() {}
 	virtual void OnKeyDown() {}
 	virtual void OnKeyUp() {}
-protected:
-	// ~Begin Rml::EventListener API 
+	/** Called at the start of Reload(), before BoundDocument is closed.
+	 *  Override to close extra documents owned by the subclass. */
+	virtual void OnPreReload() {}
+
+	// ~Begin Rml::EventListener API
 	virtual void ProcessEvent(Rml::Event& event) override;
 	// ~End Rml::EventListener API
 
-	// ~Begin UObject API 
+	// ~Begin UObject API
 	virtual void BeginDestroy() override;
 	// ~End UObject API
 
 	// ~Begin FTickableGameObject API
-	virtual void Tick(float DeltaTime) override {} 
+	virtual void Tick(float DeltaTime) override {}
 	virtual TStatId GetStatId() const override { return Super::GetStatID(); }
-	// ~End FTickableGameObject API 
-protected:
-	Rml::ElementDocument*			BoundDocument;
-	Rml::Context*					BoundContext;
-	TMap<FString, UObject*>			EventNotifyMap;
-	Rml::Event*						CurrentEvent;
+	// ~End FTickableGameObject API
+
+	Rml::ElementDocument*			BoundDocument  = nullptr;
+	Rml::Context*					BoundContext   = nullptr;
+	UPROPERTY()
+	TMap<FString, TObjectPtr<UObject>>	EventNotifyMap;
+	Rml::Event*						CurrentEvent   = nullptr;
 };

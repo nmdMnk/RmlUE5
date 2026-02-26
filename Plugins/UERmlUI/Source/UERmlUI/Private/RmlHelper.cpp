@@ -1,8 +1,9 @@
 #include "RmlHelper.h"
-#include "RmlUi/Core.h"
 #include "IImageWrapperModule.h"
 #include "IImageWrapper.h"
 #include "TextureResource.h"
+#include "RmlUi/Core.h"
+#include "Logging.h"
 
 Rml::Input::KeyIdentifier FRmlHelper::ConvertKey(FKey InKey)
 {
@@ -130,90 +131,64 @@ int FRmlHelper::GetMouseKey(const FKey& InMouseEvent)
 		ConvertMap.Add(EKeys::ThumbMouseButton, 3);
 		ConvertMap.Add(EKeys::ThumbMouseButton2, 4);
 	}
-	return ConvertMap[InMouseEvent];
+	const int* Found = ConvertMap.Find(InMouseEvent);
+	return Found ? *Found : 0;
 }
 
 UTexture2D* FRmlHelper::LoadTextureFromRaw(const uint8* InSource, FIntPoint InSize)
 {
-	// create texture 
 	UTexture2D* Texture = UTexture2D::CreateTransient(InSize.X, InSize.Y, EPixelFormat::PF_R8G8B8A8);
 	Texture->SRGB = false;
 	Texture->Filter = TF_Bilinear;
 	Texture->NeverStream = true;
 	Texture->UpdateResource();
 
-	// create region
-	FUpdateTextureRegion2D* TextureRegion = new FUpdateTextureRegion2D(
-		0,
-		0,
-		0,
-		0,
-		InSize.X,
-		InSize.Y);
+	FUpdateTextureRegion2D* TextureRegion = new FUpdateTextureRegion2D(0, 0, 0, 0, InSize.X, InSize.Y);
 
-	// copy data 
 	int32 Size = InSize.X * InSize.Y * 4;
 	uint8* Data = new uint8[Size];
 	FMemory::Memcpy(Data, InSource, Size);
 
-	// clean up function 
 	auto DataCleanup = [](uint8* Data, const FUpdateTextureRegion2D* UpdateRegion)
 	{
 		delete[] Data;
 		delete UpdateRegion;
 	};
 
-	// copy region in RHI thread 
 	Texture->UpdateTextureRegions(0, 1u, TextureRegion, 4 * InSize.X, 4, Data, DataCleanup);
-
 	return Texture;
 }
 
 UTexture2D* FRmlHelper::LoadTextureFromFile(const FString& InFilePath)
 {
-	// read file 
 	TArray64<uint8>* Data = new TArray64<uint8>();
 	FFileHelper::LoadFileToArray(*Data, *InFilePath);
-	if (Data->Num() == 0) return nullptr;
+	if (Data->Num() == 0) { delete Data; return nullptr; }
 
-	// get image format 
-	static const FName MODULE_IMAGE_WRAPPER("ImageWrapper");
-	IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(MODULE_IMAGE_WRAPPER);
+	IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
 	EImageFormat ImageFormat = ImageWrapperModule.DetectImageFormat(Data->GetData(), Data->Num());
-	if (ImageFormat == EImageFormat::Invalid) return nullptr;
+	if (ImageFormat == EImageFormat::Invalid) { delete Data; return nullptr; }
 
-	// decode image 
-	FIntPoint Size;
 	TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormat);
-	if (!ImageWrapper->SetCompressed(Data->GetData(), Data->Num())) return nullptr;
-	Size.X = ImageWrapper->GetWidth();
-	Size.Y = ImageWrapper->GetHeight();
+	if (!ImageWrapper->SetCompressed(Data->GetData(), Data->Num())) { delete Data; return nullptr; }
+
+	FIntPoint Size(ImageWrapper->GetWidth(), ImageWrapper->GetHeight());
 	ImageWrapper->GetRaw(ERGBFormat::RGBA, 8, *Data);
 
-	// create texture 
 	UTexture2D* LoadedTexture = UTexture2D::CreateTransient(Size.X, Size.Y, EPixelFormat::PF_R8G8B8A8);
 	LoadedTexture->SRGB = false;
 	LoadedTexture->Filter = TF_Bilinear;
 	LoadedTexture->NeverStream = true;
 	LoadedTexture->UpdateResource();
 
-	// set up region 
-	FUpdateTextureRegion2D* TextureRegion = new FUpdateTextureRegion2D(
-        0,
-        0,
-        0,
-        0,
-        Size.X,
-        Size.Y);
+	FUpdateTextureRegion2D* TextureRegion = new FUpdateTextureRegion2D(0, 0, 0, 0, Size.X, Size.Y);
 
-	// cleanup data 
 	auto DataCleanup = [FileData=Data](uint8* Data, const FUpdateTextureRegion2D* UpdateRegion)
 	{
 		delete FileData;
 		delete UpdateRegion;
 	};
 	LoadedTexture->UpdateTextureRegions(0, 1u, TextureRegion, 4 * Size.X, 4, Data->GetData(), DataCleanup);
-
 	return LoadedTexture;
 }
 
@@ -234,3 +209,43 @@ UTexture2D* FRmlHelper::LoadTextureFromAsset(const FString& InAssetPath, UObject
 	return Tex;
 }
 
+void FRmlHelper::PrecacheFontEffects(const FString& RmlContent)
+{
+	// Font face layers (glow, shadow, outline convolution) are generated lazily
+	// by RmlUI's font engine on the first Context::Render() that encounters them.
+	// We create a temporary invisible context and render the given document once,
+	// which triggers all the ConvolutionFilter work and GenerateTexture uploads.
+	// Because the RenderManager is keyed by RenderInterface* (global, not per-context),
+	// font layers and textures persist and benefit all subsequent real contexts.
+
+	UE_LOG(LogUERmlUI, Log, TEXT("PrecacheFontEffects: pre-warming font effect caches..."));
+
+	const double StartTime = FPlatformTime::Seconds();
+
+	Rml::Context* Ctx = Rml::CreateContext("__prewarm", Rml::Vector2i(256, 256));
+	if (!Ctx)
+	{
+		UE_LOG(LogUERmlUI, Warning, TEXT("PrecacheFontEffects: failed to create temp context"));
+		return;
+	}
+
+	// CurrentDrawer is null (BeginRender was not called), so RenderGeometry and
+	// other drawer-dependent methods safely no-op. Texture/geometry creation and
+	// font layer generation still execute normally.
+	Rml::ElementDocument* Doc = Ctx->LoadDocumentFromMemory(TCHAR_TO_UTF8(*RmlContent));
+	if (Doc)
+	{
+		Doc->Show();
+		Ctx->Update();
+		Ctx->Render();
+	}
+	else
+	{
+		UE_LOG(LogUERmlUI, Warning, TEXT("PrecacheFontEffects: failed to load prewarm document"));
+	}
+
+	Rml::RemoveContext("__prewarm");
+
+	const double ElapsedMs = (FPlatformTime::Seconds() - StartTime) * 1000.0;
+	UE_LOG(LogUERmlUI, Log, TEXT("PrecacheFontEffects: done in %.1f ms"), ElapsedMs);
+}

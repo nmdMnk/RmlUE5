@@ -13,9 +13,35 @@
 			max-width: -1dp;
 			max-height: -1dp;
 		}
+		#close_button
+		{
+			position: absolute;
+			right: 0;
+			top: 11dp;
+			width: 34dp;
+			height: 32dp;
+			line-height: 32dp;
+			text-align: center;
+			font-size: 18dp;
+			font-weight: bold;
+			color: white;
+			cursor: pointer;
+			z-index: 2;
+			decorator: image(range-bar);
+			font-effect: shadow(1dp 1dp black);
+		}
+		#close_button:hover
+		{
+			image-color: #ff6666;
+		}
+		#close_button:active
+		{
+			image-color: #cc3333;
+		}
 	</style>
 </head>
 <body class="window">
+	<div id="close_button" onclick="Controller:CloseDemo">X</div>
 	<div id="title_bar">
 		<handle move_target="#document" edge_margin="none">
 			<div id="icon"></div>

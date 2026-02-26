@@ -5,6 +5,7 @@
 #include "RmlUiWidget.generated.h"
 
 class SRmlWidget;
+namespace Rml { class Context; class Element; }
 
 /**
  * UMG widget that wraps SRmlWidget for Blueprint use.
@@ -19,6 +20,14 @@ public:
 	/** RML/HTML document path to load (file path or asset path) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RmlUi")
 	FString DefaultDocument;
+
+	/**
+	 * Pre-warm font effect textures from URmlUiSettings::WarmupDocuments.
+	 * Call BEFORE AddToViewport (e.g. in BeginPlay) to avoid CPU spikes on first render.
+	 * No-op if WarmupDocuments is empty.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "RmlUi|Performance")
+	void PrewarmFromSettings();
 
 	/** Load an RML document into the RmlUi context */
 	UFUNCTION(BlueprintCallable, Category = "RmlUi")
@@ -41,6 +50,9 @@ protected:
 #endif
 
 private:
-	TSharedPtr<SRmlWidget> RmlSlateWidget;
-	FString ContextName;
+	Rml::Element* FindElementById(const FString& ElementId) const;
+
+	TSharedPtr<SRmlWidget>	RmlSlateWidget;
+	FString					ContextName;
+	Rml::Context*			PrewarmedContext = nullptr;
 };

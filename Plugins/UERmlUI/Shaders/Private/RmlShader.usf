@@ -1,5 +1,9 @@
 #include "/Engine/Public/Platform.ush"
 
+// ============================================================================
+// Shared uniforms and structures
+// ============================================================================
+
 Texture2D		InTexture;
 SamplerState	InTextureSampler;
 float4x4		InTransform;
@@ -14,15 +18,19 @@ struct InputVS
 
 struct OutputVS
 {
-	float4	Position	: SV_POSITION;
-	float2	UV			: TEXCOORD0;
-	float4	Color		: TEXCOORD1;
+	float4			Position	: SV_POSITION;
+	centroid float2	UV			: TEXCOORD0;
+	centroid float4	Color		: TEXCOORD1;
 };
 
 struct OutputPS
 {
 	float4	Color		: SV_Target0;
 };
+
+// ============================================================================
+// Base geometry shaders
+// ============================================================================
 
 OutputVS RmlShader_VS(InputVS In)
 {
@@ -54,8 +62,252 @@ OutputPS RmlShader_PSNoTex(OutputVS In)
 	OutputPS Out;
 
 	Out.Color = In.Color;
-	
+
 	return Out;
 }
 
+// ============================================================================
+// Filter: Passthrough (opacity)
+// ============================================================================
+
+float  InBlendFactor;
+float2 InUVScale;
+float2 InUVOffset;
+
+OutputPS RmlFilter_Passthrough(OutputVS In)
+{
+	OutputPS Out;
+
+	float4 c = InTexture.Sample(InTextureSampler, In.UV * InUVScale + InUVOffset);
+	Out.Color = c * InBlendFactor;
+
+	return Out;
+}
+
+// ============================================================================
+// Filter: Gaussian Blur (linear-sampling, CPU-precomputed weights)
+// ============================================================================
+// Uses hardware bilinear trick: each pair of adjacent Gaussian taps is combined
+// into one sub-pixel-offset fetch that the HW bilinear filter evaluates exactly.
+// This halves texture fetches vs the standard per-pixel exp() loop, and moves
+// all weight computation to the CPU (ComputeRmlBlurKernel in RmlDrawer.cpp).
+//
+// InBlurSamples[i].xy  = UV-space offset (Direction * TexelSize * bilinearOffset_i)
+//                        for the +/- symmetric sample pair around the center
+// InBlurSamples[i].z   = combined normalized weight (w[i] + w[i+1])
+// InNumSamples          = number of pairs in use (<= 16)
+// InCenterWeight        = normalized weight for the center tap (w[0])
+// InTexelSize           = (1/RTWidth, 1/RTHeight) — UV boundary guard
+
+float4 InBlurSamples[16];
+int    InNumSamples;
+float  InCenterWeight;
+float2 InTexelSize;
+
+OutputPS RmlFilter_Blur(OutputVS In)
+{
+	OutputPS Out;
+
+	float2 baseUV = In.UV * InUVScale;
+
+	// Clamp sampling to the valid content region to prevent reading stale/garbage
+	// data from the non-content portion of the postprocess texture.  When PassLevel>0
+	// content is downsampled into [0, InUVScale] of the texture; the region beyond
+	// InUVScale is NOT cleared and may contain data from prior frames.  The AM_Clamp
+	// sampler would clamp to UV=1.0 (the full texture edge), not to InUVScale.
+	// Half-texel inset prevents bilinear filtering from mixing in invalid border texels.
+	float2 uvMin = 0.5f * InTexelSize;
+	float2 uvMax = max(InUVScale - 0.5f * InTexelSize, uvMin);
+
+	// Center tap
+	float4 sum = InTexture.Sample(InTextureSampler, clamp(baseUV, uvMin, uvMax)) * InCenterWeight;
+
+	// Symmetric bilinear-trick sample pairs.
+	// Each pair replaces 2 standard taps: the sub-pixel offset causes HW bilinear
+	// to return w[i]*tex[i] + w[i+1]*tex[i+1] in one fetch; the symmetric -offset
+	// side contributes w[i]*tex[-i] + w[i+1]*tex[-i-1] likewise.
+	for (int i = 0; i < InNumSamples; i++)
+	{
+		float2 offset = InBlurSamples[i].xy;
+		float  weight = InBlurSamples[i].z;
+		sum += InTexture.Sample(InTextureSampler, clamp(baseUV + offset, uvMin, uvMax)) * weight;
+		sum += InTexture.Sample(InTextureSampler, clamp(baseUV - offset, uvMin, uvMax)) * weight;
+	}
+
+	// Weights are pre-normalized (sum to 1.0), no division needed.
+	Out.Color = sum;
+
+	return Out;
+}
+
+// ============================================================================
+// Filter: Drop Shadow
+// ============================================================================
+
+float4 InShadowColor;
+float2 InShadowOffset;
+
+OutputPS RmlFilter_DropShadow(OutputVS In)
+{
+	OutputPS Out;
+
+	float2 sampleUV = In.UV + InShadowOffset;
+	// Zero out samples outside [0,1] to prevent AM_Clamp from repeating edge texels
+	// (matching GL3 reference _texCoordMin/_texCoordMax bounds check).
+	float2 inRegion = step(float2(0, 0), sampleUV) * step(sampleUV, float2(1, 1));
+	float a = InTexture.Sample(InTextureSampler, sampleUV).a * inRegion.x * inRegion.y;
+	// Premultiplied output
+	Out.Color = float4(InShadowColor.rgb * InShadowColor.a * a, InShadowColor.a * a);
+
+	return Out;
+}
+
+// ============================================================================
+// Filter: Color Matrix (4x4)
+// ============================================================================
+
+float4x4 InColorMatrix;
+
+OutputPS RmlFilter_ColorMatrix(OutputVS In)
+{
+	OutputPS Out;
+
+	float4 c = InTexture.Sample(InTextureSampler, In.UV);
+
+	// Apply color matrix directly in premultiplied space (matching GL3 reference).
+	// Since we don't transform alpha, constant terms (contrast offset, invert offset)
+	// are automatically scaled by alpha through the 4th component, which is correct
+	// for compositing.
+	float3 transformedColor = mul(c, InColorMatrix).rgb;
+	Out.Color = float4(transformedColor, c.a);
+
+	return Out;
+}
+
+// ============================================================================
+// Filter: Blend Mask
+// ============================================================================
+
+Texture2D    InMaskTexture;
+SamplerState InMaskSampler;
+
+OutputPS RmlFilter_BlendMask(OutputVS In)
+{
+	OutputPS Out;
+
+	float4 color = InTexture.Sample(InTextureSampler, In.UV);
+	float4 mask = InMaskTexture.Sample(InMaskSampler, In.UV);
+	Out.Color = color * mask.a;
+
+	return Out;
+}
+
+// ============================================================================
+// MSAA Resolve (manual, scissorable — avoids fullscreen hardware resolve)
+// ============================================================================
+
+Texture2DMS<float4> InMsaaTexture;
+int InSampleCount;
+
+OutputPS RmlFilter_MsaaResolve(OutputVS In)
+{
+	OutputPS Out;
+	int2 pos = int2(In.Position.xy);
+	float4 result = 0;
+	float rcpCount = 1.0 / float(max(InSampleCount, 1));
+	for (int i = 0; i < InSampleCount; i++)
+		result += InMsaaTexture.Load(pos, i);
+	Out.Color = result * rcpCount;
+	return Out;
+}
+
+// ============================================================================
+// Gradient shader
+// ============================================================================
+
+int   InGradientFunc;
+int   InNumStops;
+float2 InP;
+float2 InV;
+float  InStopPositions[16];
+float4 InStopColors[16];
+
+float4 SampleGradient(float t, int numStops)
+{
+	if (numStops <= 0)
+		return float4(0, 0, 0, 0);
+
+	// Match GL3 reference: accumulate with smoothstep for smooth S-curve transitions
+	// between color stops (no hard edges at stop boundaries).
+	float4 color = InStopColors[0];
+	for (int i = 1; i < numStops; i++)
+		color = lerp(color, InStopColors[i], smoothstep(InStopPositions[i - 1], InStopPositions[i], t));
+
+	return color;
+}
+
+#define GRADIENT_LINEAR           0
+#define GRADIENT_RADIAL           1
+#define GRADIENT_CONIC            2
+#define GRADIENT_REPEATING_LINEAR 3
+#define GRADIENT_REPEATING_RADIAL 4
+#define GRADIENT_REPEATING_CONIC  5
+
+static const float PI = 3.14159265359;
+
+float RepeatBetween(float t, float t0, float t1)
+{
+	float span = t1 - t0;
+	if (abs(span) <= 0.0001)
+		return t0;
+
+	// Match GLSL mod behavior used in the GL3 backend.
+	return t0 + (t - t0) - span * floor((t - t0) / span);
+}
+
+OutputPS RmlShader_Gradient(OutputVS In)
+{
+	OutputPS Out;
+
+	float t = 0.0;
+	float2 pos = In.UV;
+
+	if (InGradientFunc == GRADIENT_LINEAR || InGradientFunc == GRADIENT_REPEATING_LINEAR)
+	{
+		float distSquare = dot(InV, InV);
+		if (distSquare > 0.0000001)
+		{
+			float2 gradientVector = pos - InP;
+			t = dot(InV, gradientVector) / distSquare;
+		}
+	}
+	else if (InGradientFunc == GRADIENT_RADIAL || InGradientFunc == GRADIENT_REPEATING_RADIAL)
+	{
+		float2 gradientVector = pos - InP;
+		t = length(InV * gradientVector);
+	}
+	else if (InGradientFunc == GRADIENT_CONIC || InGradientFunc == GRADIENT_REPEATING_CONIC)
+	{
+		float2 gradientVector = pos - InP;
+		float2 rotatedVector = float2(
+			InV.x * gradientVector.x + InV.y * gradientVector.y,
+			-InV.y * gradientVector.x + InV.x * gradientVector.y);
+		t = 0.5 + atan2(-rotatedVector.x, rotatedVector.y) / (2.0 * PI);
+	}
+
+	if ((InGradientFunc == GRADIENT_REPEATING_LINEAR ||
+		 InGradientFunc == GRADIENT_REPEATING_RADIAL ||
+		 InGradientFunc == GRADIENT_REPEATING_CONIC) &&
+		InNumStops > 1)
+	{
+		float t0 = InStopPositions[0];
+		float t1 = InStopPositions[InNumStops - 1];
+		t = RepeatBetween(t, t0, t1);
+	}
+
+	float4 c = SampleGradient(t, InNumStops);
+	Out.Color = In.Color * c;
+
+	return Out;
+}
 

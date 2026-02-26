@@ -6,6 +6,8 @@ namespace Rml
 	template<typename T> class Span;
 }
 
+// CPU-only mesh container. RHI buffers are owned by FRmlDrawer's per-frame
+// shared VB/IB; this struct just holds the vertex/index data for the pre-pass.
 class FRmlMesh : public TSharedFromThis<FRmlMesh, ESPMode::ThreadSafe>
 {
 public:
@@ -19,19 +21,14 @@ public:
 		{}
 	};
 
+	// Copy RmlUI vertex/index data into CPU arrays and record counts.
 	void Setup(Rml::Span<const Rml::Vertex> InVertices, Rml::Span<const int> InIndices);
-	void BuildMesh();
-	void ReleaseMesh();
-	void DrawMesh(FRHICommandList& RHICmdList);
 
+	// Vertex declaration for PSO setup (shared, created once).
 	static FVertexDeclarationRHIRef GetMeshDeclaration();
-public:
+
 	TResourceArray<FVertexData>		Vertices;
-	FBufferRHIRef					VertexBufferRHI;
-
 	TResourceArray<uint16>			Indices;
-	FBufferRHIRef					IndexBufferRHI;
-
-	int32							NumVertices;
-	int32							NumTriangles;
+	int32							NumVertices = 0;
+	int32							NumTriangles = 0;
 };

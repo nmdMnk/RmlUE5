@@ -1,0 +1,196 @@
+<rml>
+<head>
+<link type="text/template" href="../window.rml"/>
+<title>Sprite Viewer</title>
+<style>
+body.window
+{
+	left: 80dp;
+	right: 80dp;
+	top: 50dp;
+	bottom: 50dp;
+	max-width: 2000dp;
+	max-height: 2000dp;
+}
+div#content
+{
+	text-align: left;
+}
+.sprite-row
+{
+	display: block;
+	margin-bottom: 6dp;
+	padding: 4dp;
+	background-color: #ffffff18;
+}
+.sprite-row:hover
+{
+	background-color: #ffffff30;
+}
+.sprite-preview
+{
+	display: inline-block;
+	vertical-align: middle;
+	background-color: #00000080;
+}
+.sprite-name
+{
+	display: inline-block;
+	vertical-align: middle;
+	margin-left: 10dp;
+	font-size: 13dp;
+	color: #ddd;
+}
+h2
+{
+	font-size: 16dp;
+	font-weight: bold;
+	margin-top: 15dp;
+	margin-bottom: 8dp;
+	color: #fc0;
+	font-effect: shadow(1dp 1dp black);
+}
+</style>
+</head>
+<body template="window">
+
+<h2>Icons</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:51dp;height:39dp;decorator:image(icon-help);"/><span class="sprite-name">icon-help</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:51dp;height:39dp;decorator:image(icon-invader);"/><span class="sprite-name">icon-invader</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:51dp;height:39dp;decorator:image(icon-game);"/><span class="sprite-name">icon-game</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:51dp;height:39dp;decorator:image(icon-hiscore);"/><span class="sprite-name">icon-hiscore</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:51dp;height:39dp;decorator:image(icon-waves);"/><span class="sprite-name">icon-waves</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:51dp;height:39dp;decorator:image(icon-flag);"/><span class="sprite-name">icon-flag</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:51dp;height:39dp;decorator:image(icon-lives);"/><span class="sprite-name">icon-lives</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:51dp;height:39dp;decorator:image(icon-score);"/><span class="sprite-name">icon-score</span></div>
+
+<h2>Title Bar</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:82dp;height:85dp;decorator:image(title-bar-l);"/><span class="sprite-name">title-bar-l</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:85dp;decorator:image(title-bar-c);"/><span class="sprite-name">title-bar-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:15dp;height:85dp;decorator:image(title-bar-r);"/><span class="sprite-name">title-bar-r</span></div>
+
+<h2>HUD Items</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:82dp;height:55dp;decorator:image(huditem-l);"/><span class="sprite-name">huditem-l</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:55dp;decorator:image(huditem-c);"/><span class="sprite-name">huditem-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:15dp;height:55dp;decorator:image(huditem-r);"/><span class="sprite-name">huditem-r</span></div>
+
+<h2>Window</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:133dp;height:140dp;decorator:image(window-tl);"/><span class="sprite-name">window-tl</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:140dp;decorator:image(window-t);"/><span class="sprite-name">window-t</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:10dp;height:140dp;decorator:image(window-tr);"/><span class="sprite-name">window-tr</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:10dp;height:30dp;decorator:image(window-l);"/><span class="sprite-name">window-l</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(window-c);"/><span class="sprite-name">window-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:10dp;height:30dp;decorator:image(window-r);"/><span class="sprite-name">window-r</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:11dp;height:11dp;decorator:image(window-bl);"/><span class="sprite-name">window-bl</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:11dp;decorator:image(window-b);"/><span class="sprite-name">window-b</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:10dp;height:11dp;decorator:image(window-br);"/><span class="sprite-name">window-br</span></div>
+
+<h2>Buttons</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:159dp;height:45dp;decorator:image(button);"/><span class="sprite-name">button</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:159dp;height:45dp;decorator:image(button-hover);"/><span class="sprite-name">button-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:159dp;height:45dp;decorator:image(button-active);"/><span class="sprite-name">button-active</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:135dp;height:30dp;decorator:image(button-inner);"/><span class="sprite-name">button-inner</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:135dp;height:30dp;decorator:image(button-inner-hover);"/><span class="sprite-name">button-inner-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:135dp;height:30dp;decorator:image(button-inner-active);"/><span class="sprite-name">button-inner-active</span></div>
+
+<h2>Text / Textarea</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:14dp;height:31dp;decorator:image(text-l);"/><span class="sprite-name">text-l</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:31dp;decorator:image(text-c);"/><span class="sprite-name">text-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:145dp;height:31dp;decorator:image(textarea);"/><span class="sprite-name">textarea</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:127dp;height:10dp;decorator:image(textarea-inner);"/><span class="sprite-name">textarea-inner</span></div>
+
+<h2>Select Box</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:11dp;height:9dp;decorator:image(selectbox-tl);"/><span class="sprite-name">selectbox-tl</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:9dp;decorator:image(selectbox-t);"/><span class="sprite-name">selectbox-t</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:11dp;height:9dp;decorator:image(selectbox-tr);"/><span class="sprite-name">selectbox-tr</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:11dp;height:30dp;decorator:image(selectbox-l);"/><span class="sprite-name">selectbox-l</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(selectbox-c);"/><span class="sprite-name">selectbox-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:11dp;height:11dp;decorator:image(selectbox-bl);"/><span class="sprite-name">selectbox-bl</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:11dp;decorator:image(selectbox-b);"/><span class="sprite-name">selectbox-b</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:11dp;height:11dp;decorator:image(selectbox-br);"/><span class="sprite-name">selectbox-br</span></div>
+
+<h2>Select Value / Arrow</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:145dp;height:37dp;decorator:image(selectvalue);"/><span class="sprite-name">selectvalue</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:145dp;height:37dp;decorator:image(selectvalue-hover);"/><span class="sprite-name">selectvalue-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:37dp;decorator:image(selectarrow);"/><span class="sprite-name">selectarrow</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:37dp;decorator:image(selectarrow-hover);"/><span class="sprite-name">selectarrow-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:37dp;decorator:image(selectarrow-active);"/><span class="sprite-name">selectarrow-active</span></div>
+
+<h2>Radio</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(radio);"/><span class="sprite-name">radio</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(radio-hover);"/><span class="sprite-name">radio-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(radio-active);"/><span class="sprite-name">radio-active</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(radio-checked);"/><span class="sprite-name">radio-checked</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(radio-checked-hover);"/><span class="sprite-name">radio-checked-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(radio-checked-active);"/><span class="sprite-name">radio-checked-active</span></div>
+
+<h2>Checkbox</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(checkbox);"/><span class="sprite-name">checkbox</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(checkbox-hover);"/><span class="sprite-name">checkbox-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(checkbox-active);"/><span class="sprite-name">checkbox-active</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(checkbox-checked);"/><span class="sprite-name">checkbox-checked</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(checkbox-checked-hover);"/><span class="sprite-name">checkbox-checked-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:30dp;decorator:image(checkbox-checked-active);"/><span class="sprite-name">checkbox-checked-active</span></div>
+
+<h2>Table Header</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:16dp;height:31dp;decorator:image(tableheader-l);"/><span class="sprite-name">tableheader-l</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:31dp;decorator:image(tableheader-c);"/><span class="sprite-name">tableheader-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:15dp;height:31dp;decorator:image(tableheader-r);"/><span class="sprite-name">tableheader-r</span></div>
+
+<h2>Expand</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(expand);"/><span class="sprite-name">expand</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(expand-hover);"/><span class="sprite-name">expand-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(expand-active);"/><span class="sprite-name">expand-active</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(expand-collapsed);"/><span class="sprite-name">expand-collapsed</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(expand-collapsed-hover);"/><span class="sprite-name">expand-collapsed-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(expand-collapsed-active);"/><span class="sprite-name">expand-collapsed-active</span></div>
+
+<h2>Slider Track</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:27dp;height:10dp;decorator:image(slidertrack-t);"/><span class="sprite-name">slidertrack-t</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:27dp;height:20dp;decorator:image(slidertrack-c);"/><span class="sprite-name">slidertrack-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:27dp;height:10dp;decorator:image(slidertrack-b);"/><span class="sprite-name">slidertrack-b</span></div>
+
+<h2>Slider Bar</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:23dp;height:23dp;decorator:image(sliderbar-t);"/><span class="sprite-name">sliderbar-t</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:23dp;height:20dp;decorator:image(sliderbar-c);"/><span class="sprite-name">sliderbar-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:23dp;height:22dp;decorator:image(sliderbar-b);"/><span class="sprite-name">sliderbar-b</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:23dp;height:23dp;decorator:image(sliderbar-hover-t);"/><span class="sprite-name">sliderbar-hover-t</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:23dp;height:20dp;decorator:image(sliderbar-hover-c);"/><span class="sprite-name">sliderbar-hover-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:23dp;height:22dp;decorator:image(sliderbar-hover-b);"/><span class="sprite-name">sliderbar-hover-b</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:23dp;height:23dp;decorator:image(sliderbar-active-t);"/><span class="sprite-name">sliderbar-active-t</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:23dp;height:20dp;decorator:image(sliderbar-active-c);"/><span class="sprite-name">sliderbar-active-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:23dp;height:22dp;decorator:image(sliderbar-active-b);"/><span class="sprite-name">sliderbar-active-b</span></div>
+
+<h2>Slider Arrows</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:27dp;height:24dp;decorator:image(sliderarrowdec);"/><span class="sprite-name">sliderarrowdec</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:27dp;height:24dp;decorator:image(sliderarrowdec-hover);"/><span class="sprite-name">sliderarrowdec-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:27dp;height:24dp;decorator:image(sliderarrowdec-active);"/><span class="sprite-name">sliderarrowdec-active</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:27dp;height:24dp;decorator:image(sliderarrowinc);"/><span class="sprite-name">sliderarrowinc</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:27dp;height:24dp;decorator:image(sliderarrowinc-hover);"/><span class="sprite-name">sliderarrowinc-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:27dp;height:24dp;decorator:image(sliderarrowinc-active);"/><span class="sprite-name">sliderarrowinc-active</span></div>
+
+<h2>Range</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:10dp;height:32dp;decorator:image(range-track);"/><span class="sprite-name">range-track</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:10dp;height:14dp;decorator:image(range-track-inner);"/><span class="sprite-name">range-track-inner</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:34dp;height:32dp;decorator:image(range-bar);"/><span class="sprite-name">range-bar</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(range-dec);"/><span class="sprite-name">range-dec</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(range-dec-hover);"/><span class="sprite-name">range-dec-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(range-dec-active);"/><span class="sprite-name">range-dec-active</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(range-inc);"/><span class="sprite-name">range-inc</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(range-inc-hover);"/><span class="sprite-name">range-inc-hover</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:17dp;height:17dp;decorator:image(range-inc-active);"/><span class="sprite-name">range-inc-active</span></div>
+
+<h2>Progress</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:13dp;height:34dp;decorator:image(progress-l);"/><span class="sprite-name">progress-l</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:54dp;height:34dp;decorator:image(progress-c);"/><span class="sprite-name">progress-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:13dp;height:34dp;decorator:image(progress-r);"/><span class="sprite-name">progress-r</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:6dp;height:34dp;decorator:image(progress-fill-l);"/><span class="sprite-name">progress-fill-l</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:30dp;height:34dp;decorator:image(progress-fill-c);"/><span class="sprite-name">progress-fill-c</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:6dp;height:34dp;decorator:image(progress-fill-r);"/><span class="sprite-name">progress-fill-r</span></div>
+
+<h2>Gauge</h2>
+<div class="sprite-row"><div class="sprite-preview" style="width:100dp;height:86dp;decorator:image(gauge);"/><span class="sprite-name">gauge</span></div>
+<div class="sprite-row"><div class="sprite-preview" style="width:100dp;height:86dp;decorator:image(gauge-fill);"/><span class="sprite-name">gauge-fill</span></div>
+
+</body>
+</rml>

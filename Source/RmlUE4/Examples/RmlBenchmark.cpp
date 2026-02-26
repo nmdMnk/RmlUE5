@@ -2,6 +2,9 @@
 #include "RmlUi/Core/Input.h"
 #include "RmlUi/Core/Profiling.h"
 
+DECLARE_STATS_GROUP(TEXT("RmlUI_Benchmark"), STATGROUP_RmlUI_Benchmark, STATCAT_Advanced);
+DECLARE_CYCLE_STAT(TEXT("RmlUI SetInnerRML (50 rows)"), STAT_RmlUI_SetInnerRML, STATGROUP_RmlUI_Benchmark);
+
 void URmlBenchmark::OnInit()
 {
 	using namespace Rml;
@@ -10,26 +13,25 @@ void URmlBenchmark::OnInit()
 
 void URmlBenchmark::OnKeyDown()
 {
-	auto key_identifier = (Rml::Input::KeyIdentifier)CurrentEvent->GetParameter< int >("key_identifier", 0);
+	auto key_identifier = (Rml::Input::KeyIdentifier)CurrentEvent->GetParameter<int>("key_identifier", 0);
 
 	switch (key_identifier)
 	{
 	case Rml::Input::KI_RIGHT:
-		run_update = false;
-		single_update = true;
+		bRunUpdate = false;
+		bSingleUpdate = true;
 		break;
 	case Rml::Input::KI_RETURN:
-		run_update = !run_update;
+		bRunUpdate = !bRunUpdate;
 		break;
 	}
-
 }
 
 void URmlBenchmark::Tick(float DeltaTime)
 {
-	if (run_update || single_update)
+	if (bRunUpdate || bSingleUpdate)
 	{
-		single_update = false;
+		bSingleUpdate = false;
 
 		PerformanceTest();
 	}
@@ -38,7 +40,7 @@ void URmlBenchmark::Tick(float DeltaTime)
 	static float fps_buffer[buffer_size] = {};
 	static int buffer_index = 0;
 
-	static double t_prev = 0.0f;
+	static double t_prev = 0.0;
 	double t = FSlateApplication::Get().GetCurrentTime();
 	float dt = float(t - t_prev);
 	t_prev = t;
@@ -110,5 +112,8 @@ void URmlBenchmark::PerformanceTest()
 	}
 
 	if (auto el = BoundDocument->GetElementById("performance"))
+	{
+		SCOPE_CYCLE_COUNTER(STAT_RmlUI_SetInnerRML);
 		el->SetInnerRML(rml);
+	}
 }

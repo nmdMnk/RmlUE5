@@ -21,8 +21,17 @@ public class RmlUI : ModuleRules
 		// RML ui need RTTI
 		bUseRTTI = true;
 
+		// Always optimize RmlUI library — even in DebugGame.
+		// InNonDebugBuilds does NOT cover DebugGame for project plugins,
+		// so we use Always to force /Ox in all configurations.
+		// Without this, DebugGame compiles with /Od, making DOM operations 2-3× slower.
+		OptimizeCode = CodeOptimization.Always;
+
 		// Disable pch to fix header error
 		PCHUsage = PCHUsageMode.NoPCHs;
+
+		// Disable unity build
+		bUseUnity = false;
 
 		// Add include path
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Include"));

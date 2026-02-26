@@ -26,45 +26,9 @@ void FRmlMesh::Setup(Rml::Span<const Rml::Vertex> InVertices, Rml::Span<const in
 			TEXT("RmlUI index %d out of uint16 range (value: %d)"), i, InIndices[i]);
 		Indices[i] = (uint16)InIndices[i];
 	}
-}
 
-void FRmlMesh::BuildMesh()
-{
-	// Only record counts here — RHI buffers are created lazily in DrawMesh() on the render thread.
-	// RHICreateVertexBuffer / RHICreateIndexBuffer require IsInRenderingThread().
-	if (Vertices.Num() == 0 || Indices.Num() == 0) return;
-	check(Indices.Num() % 3 == 0);
-	NumVertices  = Vertices.Num();
-	NumTriangles = Indices.Num() / 3;
-}
-
-void FRmlMesh::ReleaseMesh()
-{
-	VertexBufferRHI.SafeRelease();
-	IndexBufferRHI.SafeRelease();
-}
-
-void FRmlMesh::DrawMesh(FRHICommandList& RHICmdList)
-{
-	check(IsInRenderingThread());
-
-	if (NumVertices == 0 || NumTriangles == 0) return;
-
-	// Create RHI buffers lazily on the render thread (can't create them in BuildMesh
-	// which runs on the game thread via CompileGeometry / SRmlWidget::OnPaint).
-	if (!VertexBufferRHI.IsValid())
-	{
-		const int32 VerticesBufferSize = sizeof(FVertexData) * Vertices.Num();
-		FRHIResourceCreateInfo VtxInfo(TEXT("RmlVertexBuffer"), &Vertices);
-		VertexBufferRHI = RHICreateVertexBuffer(VerticesBufferSize, BUF_Static, VtxInfo);
-
-		const int32 IndexBufferSize = sizeof(uint16) * Indices.Num();
-		FRHIResourceCreateInfo IdxInfo(TEXT("RmlIndexBuffer"), &Indices);
-		IndexBufferRHI = RHICreateIndexBuffer(sizeof(uint16), IndexBufferSize, BUF_Static, IdxInfo);
-	}
-
-	RHICmdList.SetStreamSource(0, VertexBufferRHI, 0);
-	RHICmdList.DrawIndexedPrimitive(IndexBufferRHI, 0, 0, NumVertices, 0, NumTriangles, 1);
+	NumVertices  = NumVerts;
+	NumTriangles = NumIdx / 3;
 }
 
 FVertexDeclarationRHIRef FRmlMesh::GetMeshDeclaration()

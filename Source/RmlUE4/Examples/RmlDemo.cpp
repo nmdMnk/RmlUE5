@@ -3,6 +3,9 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "RmlUi/Core.h"
 #include "RmlUi/Core/StreamMemory.h"
+#if !UE_BUILD_SHIPPING
+#include "RmlUi/Debugger/Debugger.h"
+#endif
 
 void URmlDemo::OnInit()
 {
@@ -23,9 +26,7 @@ void URmlDemo::OnInit()
 	scrollbarhorizontal sliderbar:active { background: #666; }
 	)";
 	
-	{
-		BoundDocument->GetElementById("title")->SetInnerRML("Demo sample");
-	}
+	BoundDocument->GetElementById("title")->SetInnerRML("Demo sample");
 
 	// Add sandbox default text.
 	if (auto source = static_cast<Rml::ElementFormControl*>(BoundDocument->GetElementById("sandbox_rml_source")))
@@ -80,13 +81,24 @@ void URmlDemo::OnInit()
 	progress_horizontal = BoundDocument->GetElementById("progress_horizontal");
 }
 
+void URmlDemo::OnKeyDown()
+{
+	Rml::Input::KeyIdentifier Key = (Rml::Input::KeyIdentifier)CurrentEvent->GetParameter<int>("key_identifier", 0);
+	if (Key == Rml::Input::KI_D)
+	{
+#if !UE_BUILD_SHIPPING
+		Rml::Debugger::SetVisible(!Rml::Debugger::IsVisible());
+#endif
+	}
+}
+
 void URmlDemo::Tick(float DeltaTime)
 {
 	if (iframe)
 	{
 		iframe->UpdateDocument();
 	}
-	if (BoundDocument && submitting && gauge && progress_horizontal)
+	if (BoundDocument && bSubmitting && gauge && progress_horizontal)
 	{
 		using namespace Rml;
 		constexpr float progressbars_time = 2.f;
@@ -128,7 +140,7 @@ void URmlDemo::Tick(float DeltaTime)
 
 		if (progress >= 2.0f)
 		{
-			submitting = false;
+			bSubmitting = false;
 			if (auto el_output = BoundDocument->GetElementById("form_output"))
 				el_output->SetInnerRML(submit_message);
 		}
@@ -158,18 +170,20 @@ void URmlDemo::cancel_exit()
 		parent->SetInnerRML("<button id='exit' onclick='exit'>Exit</button>");
 }
 
-struct TweeningParameters {
+struct FTweeningParameters
+{
 	Rml::Tween::Type type = Rml::Tween::Linear;
 	Rml::Tween::Direction direction = Rml::Tween::Out;
 	float duration = 0.5f;
-} tweening_parameters;
+};
+static FTweeningParameters GTweeningParameters;
 
 void URmlDemo::change_color()
 {
 	using namespace Rml;
 	auto element = CurrentEvent->GetCurrentElement();
 	Colourb color((byte)Math::RandomInteger(255), (byte)Math::RandomInteger(255), (byte)Math::RandomInteger(255));
-	element->Animate("image-color", Property(color, Unit::COLOUR), tweening_parameters.duration, Tween(tweening_parameters.type, tweening_parameters.direction));
+	element->Animate("image-color", Property(color, Unit::COLOUR), GTweeningParameters.duration, Tween(GTweeningParameters.type, GTweeningParameters.direction));
 	CurrentEvent->StopPropagation();
 }
 
@@ -182,17 +196,16 @@ void URmlDemo::move_child()
 	{
 		Vector2f new_pos = mouse_pos - element->GetAbsoluteOffset() - Vector2f(0.35f * child->GetClientWidth(), 0.9f * child->GetClientHeight());
 		Property destination = Transform::MakeProperty({ Transforms::Translate2D(new_pos.x, new_pos.y) });
-		if(tweening_parameters.duration <= 0)
+		if(GTweeningParameters.duration <= 0)
 			child->SetProperty(PropertyId::Transform, destination);
 		else
-			child->Animate("transform", destination, tweening_parameters.duration, Tween(tweening_parameters.type, tweening_parameters.direction));
+			child->Animate("transform", destination, GTweeningParameters.duration, Tween(GTweeningParameters.type, GTweeningParameters.direction));
 	}
 }
 
 void URmlDemo::tween_function()
 {
 	using namespace Rml;
-	auto element = CurrentEvent->GetCurrentElement();
 	static const SmallUnorderedMap<String, Tween::Type> tweening_functions = {
 		{"back", Tween::Back}, {"bounce", Tween::Bounce},
 		{"circular", Tween::Circular}, {"cubic", Tween::Cubic},
@@ -205,7 +218,7 @@ void URmlDemo::tween_function()
 	String value = CurrentEvent->GetParameter("value", String());
 	auto it = tweening_functions.find(value);
 	if (it != tweening_functions.end())
-		tweening_parameters.type = it->second;
+		GTweeningParameters.type = it->second;
 	else
 	{
 		RMLUI_ERROR;
@@ -215,14 +228,13 @@ void URmlDemo::tween_function()
 void URmlDemo::tween_direction()
 {
 	using namespace Rml;
-	auto element = CurrentEvent->GetCurrentElement();
 	String value = CurrentEvent->GetParameter("value", String());
 	if (value == "in")
-		tweening_parameters.direction = Tween::In;
+		GTweeningParameters.direction = Tween::In;
 	else if(value == "out")
-		tweening_parameters.direction = Tween::Out;
+		GTweeningParameters.direction = Tween::Out;
 	else if(value == "in-out")
-		tweening_parameters.direction = Tween::InOut;
+		GTweeningParameters.direction = Tween::InOut;
 	else
 	{
 		RMLUI_ERROR;
@@ -234,7 +246,7 @@ void URmlDemo::tween_duration()
 	using namespace Rml;
 	auto element = CurrentEvent->GetCurrentElement();
 	float value = (float)std::atof(static_cast<Rml::ElementFormControl*>(element)->GetValue().c_str());
-	tweening_parameters.duration = value;
+	GTweeningParameters.duration = value;
 	if (auto el_duration = element->GetElementById("duration"))
 		el_duration->SetInnerRML(CreateString("%2.2f", value));
 }
@@ -248,12 +260,12 @@ void URmlDemo::rating()
 	if (el_rating && el_rating_emoji)
 	{
 		enum { Sad, Mediocre, Exciting, Celebrate, Champion, CountEmojis };
-		static const Rml::String emojis[CountEmojis] = { 
+		static const Rml::String emojis[CountEmojis] = {
 			(const char*)u8"😢", (const char*)u8"😐", (const char*)u8"😮",
-            (const char*)u8"😎", (const char*)u8"🏆"
-        };
+			(const char*)u8"😎", (const char*)u8"🏆"
+		};
 		int value = CurrentEvent->GetParameter("value", 50);
-				
+
 		Rml::String emoji;
 		if (value <= 0)
 			emoji = emojis[Sad];
@@ -274,7 +286,6 @@ void URmlDemo::rating()
 void URmlDemo::submit_form()
 {
 	using namespace Rml;
-	auto element = CurrentEvent->GetCurrentElement();
 	const auto& p = CurrentEvent->GetParameters();
 	Rml::String output = "<p>";
 	for (auto& entry : p)
@@ -313,7 +324,7 @@ void URmlDemo::set_sandbox_style()
 
 void URmlDemo::SubmitForm(Rml::String in_submit_message)
 {
-	submitting = true;
+	bSubmitting = true;
 	submitting_start_time = Rml::GetSystemInterface()->GetElapsedTime();
 	submit_message = in_submit_message;
 	if (auto el_output = BoundDocument->GetElementById("form_output"))
@@ -339,7 +350,5 @@ void URmlDemo::SetSandboxStylesheet(const Rml::String& string)
 void URmlDemo::SetSandboxBody(const Rml::String& string)
 {
 	if (iframe)
-	{
 		iframe->SetInnerRML(string);
-	}
 }
