@@ -1,4 +1,4 @@
-#include "RmlUE4GameModeBase.h"
+#include "RmlUE5GameModeBase.h"
 #include "SRmlWidget.h"
 #include "Examples/RmlAnimation.h"
 #include "Examples/RmlBenchmark.h"
@@ -18,13 +18,13 @@
 #include "RmlUi/Debugger/Debugger.h"
 #endif
 
-ARmlUE4GameModeBase::ARmlUE4GameModeBase()
+ARmlUE5GameModeBase::ARmlUE5GameModeBase()
 	: MainDemo(nullptr)
 {
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-void ARmlUE4GameModeBase::BeginPlay()
+void ARmlUE5GameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -100,12 +100,12 @@ void ARmlUE4GameModeBase::BeginPlay()
 	GetWorld()->GetFirstPlayerController()->bShowMouseCursor = true;
 }
 
-void ARmlUE4GameModeBase::Tick(float DeltaSeconds)
+void ARmlUE5GameModeBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 }
 
-void ARmlUE4GameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void ARmlUE5GameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 
@@ -169,7 +169,7 @@ void ARmlUE4GameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Rml::SetRenderInterface(nullptr);
 }
 
-void ARmlUE4GameModeBase::_LoadDemos(const FString& InBasePath)
+void ARmlUE5GameModeBase::_LoadDemos(const FString& InBasePath)
 {
 	// setup notify object
 	DemoSelector->SetNotifyObject(TEXT("Controller"), this);
@@ -224,24 +224,24 @@ void ARmlUE4GameModeBase::_LoadDemos(const FString& InBasePath)
 	_SetDocumentTitle(MockupInventory);
 }
 
-void ARmlUE4GameModeBase::OpenDemo() { _ChangeShowItem(MainDemo); }
-void ARmlUE4GameModeBase::OpenBenchMark() { _ChangeShowItem(BenchMark); }
-void ARmlUE4GameModeBase::OpenAnimation() { _ChangeShowItem(Animation); }
-void ARmlUE4GameModeBase::OpenTransform() { _ChangeShowItem(Transform); }
-void ARmlUE4GameModeBase::OpenSprites() { _ChangeShowItem(Sprites); }
-void ARmlUE4GameModeBase::OpenEffects() { _ChangeShowItem(Effects); }
-void ARmlUE4GameModeBase::OpenDrag() { _ChangeShowItem(Drag); }
-void ARmlUE4GameModeBase::OpenDataBinding() { _ChangeShowItem(DataBinding); }
-void ARmlUE4GameModeBase::OpenMockupInventory() { _ChangeShowItem(MockupInventory); }
+void ARmlUE5GameModeBase::OpenDemo() { _ChangeShowItem(MainDemo); }
+void ARmlUE5GameModeBase::OpenBenchMark() { _ChangeShowItem(BenchMark); }
+void ARmlUE5GameModeBase::OpenAnimation() { _ChangeShowItem(Animation); }
+void ARmlUE5GameModeBase::OpenTransform() { _ChangeShowItem(Transform); }
+void ARmlUE5GameModeBase::OpenSprites() { _ChangeShowItem(Sprites); }
+void ARmlUE5GameModeBase::OpenEffects() { _ChangeShowItem(Effects); }
+void ARmlUE5GameModeBase::OpenDrag() { _ChangeShowItem(Drag); }
+void ARmlUE5GameModeBase::OpenDataBinding() { _ChangeShowItem(DataBinding); }
+void ARmlUE5GameModeBase::OpenMockupInventory() { _ChangeShowItem(MockupInventory); }
 
-void ARmlUE4GameModeBase::CloseDemo()
+void ARmlUE5GameModeBase::CloseDemo()
 {
 	if (!CurrentElement) return;
 
 	_ChangeShowItem(nullptr);
 }
 
-void ARmlUE4GameModeBase::_SetDocumentTitle(URmlDocument* InDocument)
+void ARmlUE5GameModeBase::_SetDocumentTitle(URmlDocument* InDocument)
 {
 	auto* Doc = InDocument->GetDocument();
 	if (!Doc) return;
@@ -250,7 +250,7 @@ void ARmlUE4GameModeBase::_SetDocumentTitle(URmlDocument* InDocument)
 		TitleEl->SetInnerRML(Doc->GetTitle());
 }
 
-void ARmlUE4GameModeBase::_ChangeShowItem(URmlDocument* InDocument)
+void ARmlUE5GameModeBase::_ChangeShowItem(URmlDocument* InDocument)
 {
 	// Stop and clear benchmark if it was active.
 	if (CurrentElement == BenchMark)

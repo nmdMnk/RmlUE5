@@ -4,7 +4,7 @@
 #include "RmlInterface/UERmlFileInterface.h"
 #include "RmlInterface/UERmlRenderInterface.h"
 #include "RmlInterface/UERmlSystemInterface.h"
-#include "RmlUE4GameModeBase.generated.h"
+#include "RmlUE5GameModeBase.generated.h"
 
 class SRmlWidget;
 class URmlDocument;
@@ -19,11 +19,11 @@ class URmlMockupInventory;
 namespace Rml { class Context; }
 
 UCLASS()
-class RMLUE4_API ARmlUE4GameModeBase : public AGameModeBase
+class RMLUE5_API ARmlUE5GameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 public:
-	ARmlUE4GameModeBase();
+	ARmlUE5GameModeBase();
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;

@@ -5,7 +5,7 @@
 	"Description": "",
 	"Modules": [
 		{
-			"Name": "RmlUE4",
+			"Name": "RmlUE5",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}

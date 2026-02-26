@@ -2,12 +2,12 @@
 
 using UnrealBuildTool;
 
-public class RmlUE4Target : TargetRules
+public class RmlUE5Target : TargetRules
 {
-    public RmlUE4Target(TargetInfo Target) : base(Target)
+    public RmlUE5Target(TargetInfo Target) : base(Target)
     {
         Type = TargetType.Game;
         DefaultBuildSettings = BuildSettingsVersion.Latest;
-        ExtraModuleNames.AddRange(new string[] { "RmlUE4" });
+        ExtraModuleNames.AddRange(new string[] { "RmlUE5" });
     }
 }
