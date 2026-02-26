@@ -40,6 +40,7 @@ public class RmlUI : ModuleRules
 		PrivateDefinitions.AddRange(new string[]
 		{
 			"RMLUI_CORE_EXPORTS" ,          // 6.2 export macro: RMLUICORE_API = __declspec(dllexport)
+			"RMLUI_DEBUGGER_EXPORTS" ,      // Debugger export macro: RMLUIDEBUGGER_API = __declspec(dllexport)
 			"RMLUI_FONT_ENGINE_FREETYPE" ,  // 6.2: opt-in to compile the default FreeType font engine
 			"_CRT_SECURE_NO_WARNINGS" ,     // Disable scanf warning
 		});

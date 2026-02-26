@@ -37,7 +37,7 @@ void ARmlUE5GameModeBase::BeginPlay()
 	Rml::SetRenderInterface(&RmlRenderInterface);
 
 	// load font face
-	FString FontPath = FPaths::ProjectContentDir() / TEXT("RmlAssets/assets/");
+	FString FontPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()) / TEXT("RmlAssets/assets/");
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("LatoLatin-Regular.ttf"))));
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("LatoLatin-Bold.ttf"))));
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("LatoLatin-Italic.ttf"))));

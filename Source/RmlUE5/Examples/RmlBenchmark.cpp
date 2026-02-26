@@ -29,6 +29,8 @@ void URmlBenchmark::OnKeyDown()
 
 void URmlBenchmark::Tick(float DeltaTime)
 {
+	if (!BoundDocument) return;
+
 	if (bRunUpdate || bSingleUpdate)
 	{
 		bSingleUpdate = false;
