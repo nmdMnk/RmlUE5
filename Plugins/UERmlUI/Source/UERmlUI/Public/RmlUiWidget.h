@@ -7,6 +7,17 @@
 class SRmlWidget;
 namespace Rml { class Context; class Element; }
 
+/** One font face to load when the widget initializes. */
+USTRUCT(BlueprintType)
+struct UERMLUI_API FRmlFontEntry
+{
+	GENERATED_BODY()
+
+	/** Font file path, relative to project root (e.g. Content/RmlAssets/assets/LatoLatin-Regular.ttf). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RmlUi")
+	FString FontPath;
+};
+
 /**
  * UMG widget that wraps SRmlWidget for Blueprint use.
  * Drop into a Widget Blueprint to display RmlUi HTML/RCSS content in-game.
@@ -20,6 +31,14 @@ public:
 	/** RML/HTML document path to load (file path or asset path) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RmlUi")
 	FString DefaultDocument;
+
+	/**
+	 * Font faces to load before the document is shown.
+	 * Paths are relative to the project root (e.g. Content/RmlAssets/assets/LatoLatin-Regular.ttf).
+	 * Fonts are global in RmlUi — loading them here makes them available to all widgets.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RmlUi")
+	TArray<FRmlFontEntry> Fonts;
 
 	/**
 	 * Pre-warm font effect textures from URmlUiSettings::WarmupDocuments.

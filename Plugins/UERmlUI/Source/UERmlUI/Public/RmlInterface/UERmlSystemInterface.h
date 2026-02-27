@@ -22,4 +22,7 @@ protected:
 	// ~End Rml::SystemInterface API
 private:
 	EMouseCursor::Type	CachedCursor;
+#if !UE_BUILD_SHIPPING
+	TSet<FString>		SeenWarnings; // dedup: each unique warning logged once
+#endif
 };

@@ -36,5 +36,9 @@ public class UERmlUI : ModuleRules
 				"ImageWrapper" ,
 				"UMG" ,
 			});
+
+		// Expose RmlUI internal Source/Core headers so UERmlUI.cpp can inherit
+		// FontEngineInterfaceDefault for family-level font fallback.
+		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "RmlUI", "Source", "Core"));
 	}
 }

@@ -28,10 +28,14 @@ void ARmlUE5GameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Re-register all interfaces each PIE session.
-	// UERmlUI module calls Initialise() once at startup; we must NOT call it again.
-	// EndPlay nulls the interface pointers (to avoid dangling refs to our members),
-	// so we must re-register them here on every BeginPlay.
+	// Override RmlUI interfaces with our own for this PIE session.
+#if WITH_EDITOR
+	// In editor, save the module's interfaces so we can restore them in EndPlay.
+	// URmlUiWidget in the designer would crash if interfaces are left null after PIE.
+	PrevFileInterface   = Rml::GetFileInterface();
+	PrevSystemInterface = Rml::GetSystemInterface();
+	PrevRenderInterface = Rml::GetRenderInterface();
+#endif
 	Rml::SetFileInterface(&RmlFileInterface);
 	Rml::SetSystemInterface(&RmlSystemInterface);
 	Rml::SetRenderInterface(&RmlRenderInterface);
@@ -54,7 +58,7 @@ void ARmlUE5GameModeBase::BeginPlay()
 		FVector2D Vps;
 		GEngine->GameViewport->GetViewportSize(Vps);
 		if (!Vps.IsNearlyZero())
-			InitialDims = Rml::Vector2i((int)Vps.X, (int)Vps.Y);
+			InitialDims = Rml::Vector2i(static_cast<int>(Vps.X), static_cast<int>(Vps.Y));
 	}
 	Context = Rml::CreateContext("Test Context", InitialDims);
 
@@ -162,11 +166,18 @@ void ARmlUE5GameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	// Passing our interface pointer releases only our manager's textures.
 	Rml::ReleaseTextures(&RmlRenderInterface);
 
-	// Null the interface pointers before GameMode members are destroyed.
 	// Do NOT call Rml::Shutdown() — the UERmlUI module owns the lifecycle.
+#if WITH_EDITOR
+	// Restore the module's interfaces so URmlUiWidget stays functional in the editor.
+	Rml::SetFileInterface(PrevFileInterface);
+	Rml::SetSystemInterface(PrevSystemInterface);
+	Rml::SetRenderInterface(PrevRenderInterface);
+#else
+	// In packaged builds, null out interfaces before our members are destroyed.
 	Rml::SetFileInterface(nullptr);
 	Rml::SetSystemInterface(nullptr);
 	Rml::SetRenderInterface(nullptr);
+#endif
 }
 
 void ARmlUE5GameModeBase::_LoadDemos(const FString& InBasePath)
@@ -243,10 +254,10 @@ void ARmlUE5GameModeBase::CloseDemo()
 
 void ARmlUE5GameModeBase::_SetDocumentTitle(URmlDocument* InDocument)
 {
-	auto* Doc = InDocument->GetDocument();
+	Rml::ElementDocument* Doc = InDocument->GetDocument();
 	if (!Doc) return;
 
-	if (auto* TitleEl = Doc->GetElementById("title"))
+	if (Rml::Element* TitleEl = Doc->GetElementById("title"))
 		TitleEl->SetInnerRML(Doc->GetTitle());
 }
 
@@ -258,8 +269,8 @@ void ARmlUE5GameModeBase::_ChangeShowItem(URmlDocument* InDocument)
 		BenchMark->bDoPerformanceTest = false;
 		// Clear generated rows so the hidden document doesn't keep ~500 live
 		// elements that bloat Context::Update() every frame after closing.
-		if (auto* Doc = BenchMark->GetDocument())
-			if (auto* El = Doc->GetElementById("performance"))
+		if (Rml::ElementDocument* Doc = BenchMark->GetDocument())
+			if (Rml::Element* El = Doc->GetElementById("performance"))
 				El->SetInnerRML("");
 	}
 

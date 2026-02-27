@@ -59,7 +59,14 @@ private:
 	FUERmlFileInterface			RmlFileInterface;
 	FUERmlSystemInterface		RmlSystemInterface;
 	FUERmlRenderInterface		RmlRenderInterface;
-	Rml::Context*				Context;
+	Rml::Context*				Context = nullptr;
+
+#if WITH_EDITOR
+	// Saved in BeginPlay, restored in EndPlay so URmlUiWidget stays functional after PIE.
+	Rml::FileInterface*			PrevFileInterface   = nullptr;
+	Rml::SystemInterface*		PrevSystemInterface = nullptr;
+	Rml::RenderInterface*		PrevRenderInterface = nullptr;
+#endif
 	TSharedPtr<SRmlWidget>		RmlWidget;
 
 	UPROPERTY()

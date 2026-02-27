@@ -12,6 +12,11 @@ TSharedRef<SWidget> URmlUiWidget::RebuildWidget()
 	// Destroy any previous context, unless we have a pre-warmed one ready.
 	if (!ContextName.IsEmpty() && !PrewarmedContext)
 	{
+		// Null the context on the old SRmlWidget BEFORE removing it.
+		// Slate may tick the old widget one more time after RebuildWidget returns;
+		// without this, it would access the freed context (use-after-free on root_element).
+		if (RmlSlateWidget.IsValid())
+			RmlSlateWidget->Context(nullptr);
 		Rml::RemoveContext(TCHAR_TO_UTF8(*ContextName));
 		ContextName.Empty();
 	}
@@ -34,6 +39,15 @@ TSharedRef<SWidget> URmlUiWidget::RebuildWidget()
 		.InitContext(Context)
 		.InitEnableRml(true);
 
+	// Load font faces before the document so text renders on the first frame.
+	// Fonts are global in RmlUi — duplicates are silently ignored.
+	for (const FRmlFontEntry& Font : Fonts)
+	{
+		if (Font.FontPath.IsEmpty())
+			continue;
+		Rml::LoadFontFace(TCHAR_TO_UTF8(*Font.FontPath));
+	}
+
 	// Auto-load DefaultDocument if set
 	if (Context && !DefaultDocument.IsEmpty())
 	{
@@ -48,6 +62,8 @@ TSharedRef<SWidget> URmlUiWidget::RebuildWidget()
 void URmlUiWidget::ReleaseSlateResources(bool bReleaseChildren)
 {
 	Super::ReleaseSlateResources(bReleaseChildren);
+	if (RmlSlateWidget.IsValid())
+		RmlSlateWidget->Context(nullptr);
 	if (!ContextName.IsEmpty())
 	{
 		Rml::RemoveContext(TCHAR_TO_UTF8(*ContextName));
@@ -76,7 +92,7 @@ void URmlUiWidget::PrewarmFromSettings()
 		FVector2D Vps;
 		GEngine->GameViewport->GetViewportSize(Vps);
 		if (!Vps.IsNearlyZero())
-			Dims = Rml::Vector2i((int)Vps.X, (int)Vps.Y);
+			Dims = Rml::Vector2i(static_cast<int>(Vps.X), static_cast<int>(Vps.Y));
 	}
 
 	ContextName = FString::Printf(TEXT("UERmlWidget_%d"), GRmlContextCounter++);

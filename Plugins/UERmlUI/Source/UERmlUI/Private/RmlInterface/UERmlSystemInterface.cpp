@@ -63,8 +63,17 @@ bool FUERmlSystemInterface::LogMessage(Rml::Log::Type type, const Rml::String& m
 		UE_LOG(LogUERmlUI, Fatal, TEXT("%s"), UTF8_TO_TCHAR(message.c_str()));
 		return true;
 	case Rml::Log::LT_WARNING:
-		UE_LOG(LogUERmlUI, Warning, TEXT("%s"), UTF8_TO_TCHAR(message.c_str()));
+	{
+#if !UE_BUILD_SHIPPING
+		const FString WarningText(UTF8_TO_TCHAR(message.c_str()));
+		if (!SeenWarnings.Contains(WarningText))
+		{
+			SeenWarnings.Add(WarningText);
+			UE_LOG(LogUERmlUI, Warning, TEXT("%s"), *WarningText);
+		}
+#endif
 		return true;
+	}
 	case Rml::Log::LT_INFO:
 	case Rml::Log::LT_ALWAYS:
 	case Rml::Log::LT_DEBUG:
@@ -118,8 +127,8 @@ void FUERmlSystemInterface::GetClipboardText(Rml::String& text)
 	FString Result;
 	FPlatformApplicationMisc::ClipboardPaste(Result);
 
-	// compute Anis length 
-	auto AnisLen = FTCHARToUTF8_Convert::ConvertedLength(*Result, Result.Len());
+	// compute ANSI length
+	int32 AnisLen = FTCHARToUTF8_Convert::ConvertedLength(*Result, Result.Len());
 
 	// resize  
 	text.resize(AnisLen, '\0');
