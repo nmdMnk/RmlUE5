@@ -10,7 +10,7 @@
 void URmlDemo::OnInit()
 {
 	using namespace Rml;
-	static const Rml::String sandbox_default_rcss = R"(
+	static const String sandbox_default_rcss = R"(
 	body { top: 0; left: 0; right: 0; bottom: 0; overflow: hidden auto; }
 	scrollbarvertical { width: 15px; }
 	scrollbarvertical slidertrack { background: #eee; }
@@ -29,15 +29,15 @@ void URmlDemo::OnInit()
 	BoundDocument->GetElementById("title")->SetInnerRML("Demo sample");
 
 	// Add sandbox default text.
-	if (auto source = static_cast<Rml::ElementFormControl*>(BoundDocument->GetElementById("sandbox_rml_source")))
+	if (ElementFormControl* source = static_cast<ElementFormControl*>(BoundDocument->GetElementById("sandbox_rml_source")))
 	{
-		auto value = source->GetValue();
+		String value = source->GetValue();
 		value += "<p>Write your RML here</p>\n\n<!-- <img src=\"/Game/Texture/high_scores_alien_1.high_scores_alien_1\"/> -->";
 		source->SetValue(value);
 	}
 
 	// Prepare sandbox document.
-	if (auto target = BoundDocument->GetElementById("sandbox_target"))
+	if (Element* target = BoundDocument->GetElementById("sandbox_target"))
 	{
 		iframe = BoundContext->CreateDocument();
 		auto iframe_ptr = iframe->GetParentNode()->RemoveChild(iframe);
@@ -47,12 +47,11 @@ void URmlDemo::OnInit()
 		iframe->SetInnerRML("<p>Rendered output goes here.</p>");
 
 		// Load basic RML style sheet
-		Rml::String style_sheet_content;
+		String style_sheet_content;
 		{
-			// Load file into string
-			auto file_interface = Rml::GetFileInterface();
+			FileInterface* file_interface = GetFileInterface();
 			FString DocPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / TEXT("RmlAssets/assets/rml.rcss"));
-			Rml::FileHandle handle = file_interface->Open(TCHAR_TO_UTF8(*DocPath));
+			FileHandle handle = file_interface->Open(TCHAR_TO_UTF8(*DocPath));
 			
 			size_t length = file_interface->Length(handle);
 			style_sheet_content.resize(length);
@@ -62,23 +61,32 @@ void URmlDemo::OnInit()
 			style_sheet_content += sandbox_default_rcss;
 		}
 
-		Rml::StreamMemory stream((Rml::byte*)style_sheet_content.data(), style_sheet_content.size());
+		StreamMemory stream((byte*)style_sheet_content.data(), style_sheet_content.size());
 		stream.SetSourceURL("sandbox://default_rcss");
 
-		rml_basic_style_sheet = Rml::MakeShared<Rml::StyleSheetContainer>();
+		rml_basic_style_sheet = Rml::MakeShared<StyleSheetContainer>();
 		rml_basic_style_sheet->LoadStyleSheetContainer(&stream);
 	}
 
 	// Add sandbox style sheet text.
-	if (auto source = static_cast<Rml::ElementFormControl*>(BoundDocument->GetElementById("sandbox_rcss_source")))
+	if (ElementFormControl* source = static_cast<ElementFormControl*>(BoundDocument->GetElementById("sandbox_rcss_source")))
 	{
-		Rml::String value = "/* Write your RCSS here */\n\n/* body { color: #fea; background: #224; }\nimg { image-color: red; } */";
+		String value = "/* Write your RCSS here */\n\n/* body { color: #fea; background: #224; }\nimg { image-color: red; } */";
 		source->SetValue(value);
 		SetSandboxStylesheet(value);
 	}
 
 	gauge = BoundDocument->GetElementById("gauge");
 	progress_horizontal = BoundDocument->GetElementById("progress_horizontal");
+}
+
+void URmlDemo::OnPreReload()
+{
+	iframe = nullptr;
+	gauge = nullptr;
+	progress_horizontal = nullptr;
+	rml_basic_style_sheet.reset();
+	bSubmitting = false;
 }
 
 void URmlDemo::OnKeyDown()
@@ -95,9 +103,7 @@ void URmlDemo::OnKeyDown()
 void URmlDemo::Tick(float DeltaTime)
 {
 	if (iframe)
-	{
 		iframe->UpdateDocument();
-	}
 	if (BoundDocument && bSubmitting && gauge && progress_horizontal)
 	{
 		using namespace Rml;
@@ -118,8 +124,8 @@ void URmlDemo::Tick(float DeltaTime)
 		float value_mapped = value_begin + value_gauge * (value_end - value_begin);
 		gauge->SetAttribute("value", value_mapped);
 
-		auto value_gauge_str = CreateString("%d %%", Math::RoundToInteger(value_gauge * 100.f));
-		auto value_horizontal_str = CreateString("%d %%", Math::RoundToInteger(value_horizontal * 100.f));
+		String value_gauge_str = CreateString("%d %%", Math::RoundToInteger(value_gauge * 100.f));
+		String value_horizontal_str = CreateString("%d %%", Math::RoundToInteger(value_horizontal * 100.f));
 
 		if (auto el_value = BoundDocument->GetElementById("gauge_value"))
 			el_value->SetInnerRML(value_gauge_str);
@@ -150,7 +156,7 @@ void URmlDemo::Tick(float DeltaTime)
 void URmlDemo::exit()
 {
 	using namespace Rml;
-	auto element = CurrentEvent->GetCurrentElement();
+	Element* element = CurrentEvent->GetCurrentElement();
 	Element* parent = element->GetParentNode();
 	parent->SetInnerRML("<button onclick='confirm_exit' onblur='cancel_exit' onmouseout='cancel_exit'>Are you sure?</button>");
 	if (Element* child = parent->GetChild(0))
@@ -165,7 +171,7 @@ void URmlDemo::confirm_exit()
 void URmlDemo::cancel_exit()
 {
 	using namespace Rml;
-	auto element = CurrentEvent->GetCurrentElement();
+	Element* element = CurrentEvent->GetCurrentElement();
 	if(Element* parent = element->GetParentNode())
 		parent->SetInnerRML("<button id='exit' onclick='exit'>Exit</button>");
 }
@@ -181,7 +187,7 @@ static FTweeningParameters GTweeningParameters;
 void URmlDemo::change_color()
 {
 	using namespace Rml;
-	auto element = CurrentEvent->GetCurrentElement();
+	Element* element = CurrentEvent->GetCurrentElement();
 	Colourb color((byte)Math::RandomInteger(255), (byte)Math::RandomInteger(255), (byte)Math::RandomInteger(255));
 	element->Animate("image-color", Property(color, Unit::COLOUR), GTweeningParameters.duration, Tween(GTweeningParameters.type, GTweeningParameters.direction));
 	CurrentEvent->StopPropagation();
@@ -190,7 +196,7 @@ void URmlDemo::change_color()
 void URmlDemo::move_child()
 {
 	using namespace Rml;
-	auto element = CurrentEvent->GetCurrentElement();
+	Element* element = CurrentEvent->GetCurrentElement();
 	Vector2f mouse_pos( CurrentEvent->GetParameter("mouse_x", 0.0f), CurrentEvent->GetParameter("mouse_y", 0.0f) );
 	if (Element* child = element->GetFirstChild())
 	{
@@ -244,8 +250,8 @@ void URmlDemo::tween_direction()
 void URmlDemo::tween_duration()
 {
 	using namespace Rml;
-	auto element = CurrentEvent->GetCurrentElement();
-	float value = (float)std::atof(static_cast<Rml::ElementFormControl*>(element)->GetValue().c_str());
+	Element* element = CurrentEvent->GetCurrentElement();
+	float value = (float)std::atof(static_cast<ElementFormControl*>(element)->GetValue().c_str());
 	GTweeningParameters.duration = value;
 	if (auto el_duration = element->GetElementById("duration"))
 		el_duration->SetInnerRML(CreateString("%2.2f", value));
@@ -254,19 +260,19 @@ void URmlDemo::tween_duration()
 void URmlDemo::rating()
 {
 	using namespace Rml;
-	auto element = CurrentEvent->GetCurrentElement();
-	auto el_rating = element->GetElementById("rating");
-	auto el_rating_emoji = element->GetElementById("rating_emoji");
+	Element* element = CurrentEvent->GetCurrentElement();
+	Element* el_rating = element->GetElementById("rating");
+	Element* el_rating_emoji = element->GetElementById("rating_emoji");
 	if (el_rating && el_rating_emoji)
 	{
 		enum { Sad, Mediocre, Exciting, Celebrate, Champion, CountEmojis };
-		static const Rml::String emojis[CountEmojis] = {
+		static const String emojis[CountEmojis] = {
 			(const char*)u8"😢", (const char*)u8"😐", (const char*)u8"😮",
 			(const char*)u8"😎", (const char*)u8"🏆"
 		};
 		int value = CurrentEvent->GetParameter("value", 50);
 
-		Rml::String emoji;
+		String emoji;
 		if (value <= 0)
 			emoji = emojis[Sad];
 		else if(value < 50)
@@ -278,7 +284,7 @@ void URmlDemo::rating()
 		else
 			emoji = emojis[Champion];
 
-		el_rating->SetInnerRML(Rml::CreateString("%d%%", value));
+		el_rating->SetInnerRML(CreateString("%d%%", value));
 		el_rating_emoji->SetInnerRML(emoji);
 	}
 }
@@ -287,10 +293,10 @@ void URmlDemo::submit_form()
 {
 	using namespace Rml;
 	const auto& p = CurrentEvent->GetParameters();
-	Rml::String output = "<p>";
+	String output = "<p>";
 	for (auto& entry : p)
 	{
-		auto value = Rml::StringUtilities::EncodeRml(entry.second.Get<Rml::String>());
+		String value = StringUtilities::EncodeRml(entry.second.Get<String>());
 		if (entry.first == "message")
 			value = "<br/>" + value;
 		output += "<strong>" + entry.first + "</strong>: " + value + "<br/>";
@@ -303,10 +309,10 @@ void URmlDemo::submit_form()
 void URmlDemo::set_sandbox_body()
 {
 	using namespace Rml;
-	auto element = CurrentEvent->GetCurrentElement();
-	if (auto source = static_cast<Rml::ElementFormControl*>(element->GetElementById("sandbox_rml_source")))
+	Element* element = CurrentEvent->GetCurrentElement();
+	if (ElementFormControl* source = static_cast<ElementFormControl*>(element->GetElementById("sandbox_rml_source")))
 	{
-		auto value = source->GetValue();
+		String value = source->GetValue();
 		SetSandboxBody(value);
 	}
 }
@@ -314,10 +320,10 @@ void URmlDemo::set_sandbox_body()
 void URmlDemo::set_sandbox_style()
 {
 	using namespace Rml;
-	auto element = CurrentEvent->GetCurrentElement();
-	if (auto source = static_cast<Rml::ElementFormControl*>(element->GetElementById("sandbox_rcss_source")))
+	Element* element = CurrentEvent->GetCurrentElement();
+	if (ElementFormControl* source = static_cast<ElementFormControl*>(element->GetElementById("sandbox_rcss_source")))
 	{
-		auto value = source->GetValue();
+		String value = source->GetValue();
 		SetSandboxStylesheet(value);
 	}
 }

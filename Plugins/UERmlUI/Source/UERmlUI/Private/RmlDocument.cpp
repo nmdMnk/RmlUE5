@@ -21,8 +21,11 @@ bool URmlDocument::Init(Rml::Context* InCtx, const FString& InDocPath)
 
 	// Load document — path relative to project dir so RmlUi's URL class never
 	// sees a Windows drive letter (it would encode "C:" as "C|", breaking hrefs).
+	// Skip relativization if already relative (e.g. during Reload, where
+	// GetSourceURL() returns a path relative to the project dir).
 	FString RelDocPath = InDocPath;
-	FPaths::MakePathRelativeTo(RelDocPath, *FPaths::ProjectDir());
+	if (!FPaths::IsRelative(RelDocPath))
+		FPaths::MakePathRelativeTo(RelDocPath, *FPaths::ProjectDir());
 	BoundDocument = InCtx->LoadDocument(TCHAR_TO_UTF8(*RelDocPath));
 	if (!BoundDocument) return false;
 
@@ -103,12 +106,7 @@ void URmlDocument::ProcessEvent(Rml::Event& event)
 	}
 
 	// Resolve target object and UFunction
-	UObject* Obj = Object.IsEmpty() ? this : nullptr;
-	if (!Obj)
-	{
-		auto FoundObj = EventNotifyMap.Find(Object);
-		Obj = FoundObj ? *FoundObj : nullptr;
-	}
+	UObject* Obj = Object.IsEmpty() ? this : EventNotifyMap.FindRef(Object);
 
 	UFunction* Func = Obj ? Obj->GetClass()->FindFunctionByName(FName(Function)) : nullptr;
 

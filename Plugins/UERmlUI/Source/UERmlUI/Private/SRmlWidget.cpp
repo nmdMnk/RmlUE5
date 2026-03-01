@@ -15,8 +15,12 @@ void SRmlWidget::Construct(const FArguments& InArgs)
 {
 	BoundContext = InArgs._InitContext;
 	CachedSystemInterface = InArgs._InitSystemInterface;
+	if (!CachedSystemInterface)
+		CachedSystemInterface = static_cast<FUERmlSystemInterface*>(Rml::GetSystemInterface());
 	bEnableRml = InArgs._InitEnableRml;
+	bHandleCursor = InArgs._InitHandleCursor;
 	CachedRenderInterface = static_cast<FUERmlRenderInterface*>(Rml::GetRenderInterface());
+	OnEmptyClick = InArgs._OnEmptyClick;
 }
 
 bool SRmlWidget::AddToViewport(UWorld* InWorld, int32 ZOrder)
@@ -103,27 +107,26 @@ void SRmlWidget::Tick(const FGeometry& AllottedGeometry, const double InCurrentT
 		const float LogicalH = FoundBaseH * RasterScale;
 		const float CenterX = (static_cast<float>(ContextW) - LogicalW) * 0.5f;
 		const float CenterY = (static_cast<float>(ContextH) - LogicalH) * 0.5f;
+		const Rml::Property ZeroPx(0.f, Rml::Unit::PX);
+		const int32 NumDocuments = BoundContext->GetNumDocuments();
+		for (int32 DocIndex = 0; DocIndex < NumDocuments; ++DocIndex)
 		{
-			const int32 NumDocuments = BoundContext->GetNumDocuments();
-			for (int32 DocIndex = 0; DocIndex < NumDocuments; ++DocIndex)
-			{
-				Rml::ElementDocument* Doc = BoundContext->GetDocument(DocIndex);
-				if (!Doc)
-					continue;
-				const float BW = Doc->GetAttribute<float>("ui_base_width", 0.f);
-				const float BH = Doc->GetAttribute<float>("ui_base_height", 0.f);
-				if (BW <= 0.f || BH <= 0.f)
-					continue;
-				Doc->SetProperty(Rml::PropertyId::Position, Rml::Property(Rml::Style::Position::Absolute));
-				Doc->SetProperty(Rml::PropertyId::MarginTop, Rml::Property(0.f, Rml::Unit::PX));
-				Doc->SetProperty(Rml::PropertyId::MarginRight, Rml::Property(0.f, Rml::Unit::PX));
-				Doc->SetProperty(Rml::PropertyId::MarginBottom, Rml::Property(0.f, Rml::Unit::PX));
-				Doc->SetProperty(Rml::PropertyId::MarginLeft, Rml::Property(0.f, Rml::Unit::PX));
-				Doc->SetProperty(Rml::PropertyId::Left, Rml::Property(CenterX, Rml::Unit::PX));
-				Doc->SetProperty(Rml::PropertyId::Top, Rml::Property(CenterY, Rml::Unit::PX));
-				Doc->SetProperty(Rml::PropertyId::Width, Rml::Property(LogicalW, Rml::Unit::PX));
-				Doc->SetProperty(Rml::PropertyId::Height, Rml::Property(LogicalH, Rml::Unit::PX));
-			}
+			Rml::ElementDocument* Doc = BoundContext->GetDocument(DocIndex);
+			if (!Doc)
+				continue;
+			const float BW = Doc->GetAttribute<float>("ui_base_width", 0.f);
+			const float BH = Doc->GetAttribute<float>("ui_base_height", 0.f);
+			if (BW <= 0.f || BH <= 0.f)
+				continue;
+			Doc->SetProperty(Rml::PropertyId::Position, Rml::Property(Rml::Style::Position::Absolute));
+			Doc->SetProperty(Rml::PropertyId::MarginTop, ZeroPx);
+			Doc->SetProperty(Rml::PropertyId::MarginRight, ZeroPx);
+			Doc->SetProperty(Rml::PropertyId::MarginBottom, ZeroPx);
+			Doc->SetProperty(Rml::PropertyId::MarginLeft, ZeroPx);
+			Doc->SetProperty(Rml::PropertyId::Left, Rml::Property(CenterX, Rml::Unit::PX));
+			Doc->SetProperty(Rml::PropertyId::Top, Rml::Property(CenterY, Rml::Unit::PX));
+			Doc->SetProperty(Rml::PropertyId::Width, Rml::Property(LogicalW, Rml::Unit::PX));
+			Doc->SetProperty(Rml::PropertyId::Height, Rml::Property(LogicalH, Rml::Unit::PX));
 		}
 	}
 	else
@@ -247,7 +250,7 @@ FReply SRmlWidget::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKey
 {
 	if (!bEnableRml || !BoundContext) return FReply::Unhandled();
 
-	auto ModifierState = InKeyEvent.GetModifierKeys();
+	FModifierKeysState ModifierState = InKeyEvent.GetModifierKeys();
 	return BoundContext->ProcessKeyDown(
 		FRmlHelper::ConvertKey(InKeyEvent.GetKey()),
 		FRmlHelper::GetKeyModifierState(ModifierState)) ? FReply::Unhandled() : FReply::Handled();
@@ -257,7 +260,7 @@ FReply SRmlWidget::OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEv
 {
 	if (!bEnableRml || !BoundContext) return FReply::Unhandled();
 
-	auto ModifierState = InKeyEvent.GetModifierKeys();
+	FModifierKeysState ModifierState = InKeyEvent.GetModifierKeys();
 	return BoundContext->ProcessKeyUp(
 		FRmlHelper::ConvertKey(InKeyEvent.GetKey()),
 		FRmlHelper::GetKeyModifierState(ModifierState)) ? FReply::Unhandled() : FReply::Handled();
@@ -288,7 +291,7 @@ FReply SRmlWidget::OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent&
 	FVector2D MousePos = (FVector2D(MouseEvent.GetScreenSpacePosition()) - RenderTranslation)
 		/ static_cast<double>(ActiveUiScale);
 
-	auto ModifierState = MouseEvent.GetModifierKeys();
+	FModifierKeysState ModifierState = MouseEvent.GetModifierKeys();
 	return BoundContext->ProcessMouseMove(
 		MousePos.X,
 		MousePos.Y,
@@ -299,16 +302,26 @@ FReply SRmlWidget::OnMouseButtonDown(const FGeometry& MyGeometry, const FPointer
 {
 	if (!bEnableRml || !BoundContext) return FReply::Unhandled();
 
-	// Reset intentional-release flag for each new press.
+	// Reset intentional-release flag and empty-click arm for each new press.
 	bReleasingCapture = false;
+	bEmptyClickArmed = false;
 
-	auto ModifierState = MouseEvent.GetModifierKeys();
+	FModifierKeysState ModifierState = MouseEvent.GetModifierKeys();
 	bool bHandled = !BoundContext->ProcessMouseButtonDown(
 		FRmlHelper::GetMouseKey(MouseEvent.GetEffectingButton()),
 		FRmlHelper::GetKeyModifierState(ModifierState));
 
 	if (bHandled)
 		return FReply::Handled().CaptureMouse(SharedThis(this));
+
+	// No RmlUI element under cursor — still capture so OnMouseButtonUp fires
+	// and we can notify the owner via OnEmptyClick. Only for left mouse button.
+	if (OnEmptyClick.IsBound() && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+	{
+		bEmptyClickArmed = true;
+		return FReply::Handled().CaptureMouse(SharedThis(this));
+	}
+
 	return FReply::Unhandled();
 }
 
@@ -326,10 +339,19 @@ FReply SRmlWidget::OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEv
 {
 	if (!bEnableRml || !BoundContext) return FReply::Unhandled();
 
-	auto ModifierState = MouseEvent.GetModifierKeys();
+	FModifierKeysState ModifierState = MouseEvent.GetModifierKeys();
 	bool bHandled = !BoundContext->ProcessMouseButtonUp(
 		FRmlHelper::GetMouseKey(MouseEvent.GetEffectingButton()),
 		FRmlHelper::GetKeyModifierState(ModifierState));
+
+	if (!bHandled && bEmptyClickArmed
+		&& MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton
+		&& OnEmptyClick.IsBound())
+	{
+		OnEmptyClick.Execute();
+		bHandled = true;
+	}
+	bEmptyClickArmed = false;
 
 	FReply Reply = bHandled ? FReply::Handled() : FReply::Unhandled();
 	if (HasMouseCapture())
@@ -349,7 +371,7 @@ FReply SRmlWidget::OnMouseWheel(const FGeometry& MyGeometry, const FPointerEvent
 {
 	if (!bEnableRml || !BoundContext) return FReply::Unhandled();
 
-	auto ModifierState = MouseEvent.GetModifierKeys();
+	FModifierKeysState ModifierState = MouseEvent.GetModifierKeys();
 	return BoundContext->ProcessMouseWheel(
 		-MouseEvent.GetWheelDelta(),
 		FRmlHelper::GetKeyModifierState(ModifierState)) ? FReply::Unhandled() : FReply::Handled();
@@ -357,7 +379,7 @@ FReply SRmlWidget::OnMouseWheel(const FGeometry& MyGeometry, const FPointerEvent
 
 FCursorReply SRmlWidget::OnCursorQuery(const FGeometry& MyGeometry, const FPointerEvent& CursorEvent) const
 {
-	if (!bEnableRml || !BoundContext || !CachedSystemInterface)
+	if (!bEnableRml || !bHandleCursor || !BoundContext || !CachedSystemInterface)
 		return FCursorReply::Unhandled();
 
 	return FCursorReply::Cursor(CachedSystemInterface->CachedCursorState());
@@ -365,6 +387,8 @@ FCursorReply SRmlWidget::OnCursorQuery(const FGeometry& MyGeometry, const FPoint
 
 void SRmlWidget::OnMouseCaptureLost(const FCaptureLostEvent& CaptureLostEvent)
 {
+	bEmptyClickArmed = false;
+
 	if (bReleasingCapture)
 	{
 		// Intentional release AND cursor still on widget: hover state is valid,

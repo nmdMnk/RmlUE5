@@ -1,0 +1,167 @@
+<rml>
+<head>
+	<link type="text/template" href="../../window.rml"/>
+	<link type="text/rcss" href="inventory.rcss"/>
+	<title>Inventory</title>
+</head>
+<body template="window" ui_base_width="1920" ui_base_height="1080">
+
+	<!-- ========== TOP BAR ========== -->
+	<div class="topbar"></div>
+
+	<!-- ========== MAIN ========== -->
+	<div class="main" data-model="inventory">
+		<div class="left-column">
+			<div class="main-currency">
+			<div class="currency-block">
+				<span class="currency-icon coin"></span>
+				<span class="currency-value coin">{{ coins }}</span>
+			</div>
+			<div class="currency-block">
+				<span class="currency-icon gem"></span>
+				<span class="currency-value gem">{{ gems }}</span>
+			</div>
+			<div class="clearfix"></div>
+			</div>
+
+		<!-- ===== LEFT: inventory grid ===== -->
+		<div id="inv-grid-container">
+			<div id="inv-grid">
+				<div class="slot" data-for="slot, idx : slots" data-attr-data-index="idx">
+					<div class="item-empty" data-if="slot.item_id == ''"></div>
+					<div class="item" data-if="slot.item_id != ''"
+					     data-class-equipped="slot.show_chip == 1"
+					     data-class-equipped-cyan="slot.show_chip == 2"
+					     data-class-selected-yellow="slot.selected == 1"
+					     data-class-selected-cyan="slot.selected == 2">
+						<div class="corner-chip" data-if="slot.show_chip >= 1"></div>
+						<div class="item-icon" data-style-decorator="slot.icon"></div>
+						<span class="item-label" data-style-color="slot.rarity_color">{{ slot.name }}</span>
+						<span class="item-qty" data-if="slot.qty > 1">{{ slot.qty }}</span>
+						<div class="tooltip" data-rml="slot.tooltip_rml"></div>
+					</div>
+				</div>
+				<div class="clearfix"></div>
+			</div>
+		</div>
+		</div>
+
+		<!-- ===== RIGHT: equip panel ===== -->
+		<div class="equip-panel">
+			<div class="equip-weapons">
+				<div class="weapon-block">
+					<span class="equip-label">MAIN WEAPON</span>
+					<div class="equip-subslot"></div>
+					<div class="equip-slot slot-main" id="equip-main" data-equip="0"
+					     data-class-selected-yellow="equip_main.selected == 1">
+						<span class="equip-empty" data-if="equip_main.item_id == ''">---</span>
+						<div class="item" data-if="equip_main.item_id != ''">
+							<div class="item-icon" data-style-decorator="equip_main.icon"></div>
+							<span class="item-label" data-style-color="equip_main.rarity_color">{{ equip_main.name }}</span>
+							<span class="item-qty" data-if="equip_main.qty > 1">{{ equip_main.qty }}</span>
+							<div class="tooltip" data-rml="equip_main.tooltip_rml"></div>
+						</div>
+					</div>
+				</div>
+
+				<div class="weapon-block">
+					<span class="equip-label">SECONDARY WPN.</span>
+					<div class="equip-subslot"></div>
+					<div class="equip-slot slot-secondary" id="equip-secondary" data-equip="1"
+					     data-class-selected-yellow="equip_secondary.selected == 1">
+						<span class="equip-empty" data-if="equip_secondary.item_id == ''">---</span>
+						<div class="item" data-if="equip_secondary.item_id != ''">
+							<div class="item-icon" data-style-decorator="equip_secondary.icon"></div>
+							<span class="item-label" data-style-color="equip_secondary.rarity_color">{{ equip_secondary.name }}</span>
+							<span class="item-qty" data-if="equip_secondary.qty > 1">{{ equip_secondary.qty }}</span>
+							<div class="tooltip" data-rml="equip_secondary.tooltip_rml"></div>
+						</div>
+					</div>
+				</div>
+
+				<div class="weapon-block">
+					<span class="equip-label">RANGE WEAPON</span>
+					<div class="equip-subslot subslot-range"></div>
+					<div class="equip-slot slot-range" id="equip-range" data-equip="2"
+					     data-class-selected-yellow="equip_range.selected == 1">
+						<span class="equip-empty" data-if="equip_range.item_id == ''">---</span>
+						<div class="item" data-if="equip_range.item_id != ''">
+							<div class="item-icon" data-style-decorator="equip_range.icon"></div>
+							<span class="item-label" data-style-color="equip_range.rarity_color">{{ equip_range.name }}</span>
+							<span class="item-qty" data-if="equip_range.qty > 1">{{ equip_range.qty }}</span>
+							<div class="tooltip" data-rml="equip_range.tooltip_rml"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="char-silhouette"></div>
+
+			<div class="equip-armor">
+				<div class="equip-slot-sm" id="equip-head" data-equip="3"
+				     data-class-equipped="equip_head.item_id != ''"
+				     data-class-selected-yellow="equip_head.selected == 1">
+					<div class="hex-outline"></div>
+					<div class="hex-fill"></div>
+					<div class="item" data-if="equip_head.item_id != ''">
+						<div class="item-icon" data-style-decorator="equip_head.icon"></div>
+						<span class="item-label" data-style-color="equip_head.rarity_color">{{ equip_head.name }}</span>
+						<span class="item-qty" data-if="equip_head.qty > 1">{{ equip_head.qty }}</span>
+					</div>
+					<span class="equip-empty-sm" data-if="equip_head.item_id == ''">Head</span>
+				</div>
+				<div class="equip-slot-sm" id="equip-chest" data-equip="4"
+				     data-class-equipped="equip_chest.item_id != ''"
+				     data-class-selected-yellow="equip_chest.selected == 1">
+					<div class="hex-outline"></div>
+					<div class="hex-fill"></div>
+					<div class="item" data-if="equip_chest.item_id != ''">
+						<div class="item-icon" data-style-decorator="equip_chest.icon"></div>
+						<span class="item-label" data-style-color="equip_chest.rarity_color">{{ equip_chest.name }}</span>
+						<span class="item-qty" data-if="equip_chest.qty > 1">{{ equip_chest.qty }}</span>
+					</div>
+					<span class="equip-empty-sm" data-if="equip_chest.item_id == ''">Chest</span>
+				</div>
+				<div class="equip-slot-sm" id="equip-hands" data-equip="5"
+				     data-class-equipped="equip_hands.item_id != ''"
+				     data-class-selected-yellow="equip_hands.selected == 1">
+					<div class="hex-outline"></div>
+					<div class="hex-fill"></div>
+					<div class="item" data-if="equip_hands.item_id != ''">
+						<div class="item-icon" data-style-decorator="equip_hands.icon"></div>
+						<span class="item-label" data-style-color="equip_hands.rarity_color">{{ equip_hands.name }}</span>
+						<span class="item-qty" data-if="equip_hands.qty > 1">{{ equip_hands.qty }}</span>
+					</div>
+					<span class="equip-empty-sm" data-if="equip_hands.item_id == ''">Hands</span>
+				</div>
+				<div class="equip-slot-sm" id="equip-legs" data-equip="6"
+				     data-class-equipped="equip_legs.item_id != ''"
+				     data-class-selected-yellow="equip_legs.selected == 1">
+					<div class="hex-outline"></div>
+					<div class="hex-fill"></div>
+					<div class="item" data-if="equip_legs.item_id != ''">
+						<div class="item-icon" data-style-decorator="equip_legs.icon"></div>
+						<span class="item-label" data-style-color="equip_legs.rarity_color">{{ equip_legs.name }}</span>
+						<span class="item-qty" data-if="equip_legs.qty > 1">{{ equip_legs.qty }}</span>
+					</div>
+					<span class="equip-empty-sm" data-if="equip_legs.item_id == ''">Legs</span>
+				</div>
+				<div class="equip-slot-sm" id="equip-feet" data-equip="7"
+				     data-class-equipped="equip_feet.item_id != ''"
+				     data-class-selected-yellow="equip_feet.selected == 1">
+					<div class="hex-outline"></div>
+					<div class="hex-fill"></div>
+					<div class="item" data-if="equip_feet.item_id != ''">
+						<div class="item-icon" data-style-decorator="equip_feet.icon"></div>
+						<span class="item-label" data-style-color="equip_feet.rarity_color">{{ equip_feet.name }}</span>
+						<span class="item-qty" data-if="equip_feet.qty > 1">{{ equip_feet.qty }}</span>
+					</div>
+					<span class="equip-empty-sm" data-if="equip_feet.item_id == ''">Feet</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="clearfix"></div>
+	</div>
+</body>
+</rml>

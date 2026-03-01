@@ -37,7 +37,8 @@ TSharedRef<SWidget> URmlUiWidget::RebuildWidget()
 
 	RmlSlateWidget = SNew(SRmlWidget)
 		.InitContext(Context)
-		.InitEnableRml(true);
+		.InitEnableRml(true)
+		.InitHandleCursor(bUseRmlCursor);
 
 	// Load font faces before the document so text renders on the first frame.
 	// Fonts are global in RmlUi — duplicates are silently ignored.
@@ -48,10 +49,14 @@ TSharedRef<SWidget> URmlUiWidget::RebuildWidget()
 		Rml::LoadFontFace(TCHAR_TO_UTF8(*Font.FontPath));
 	}
 
-	// Auto-load DefaultDocument if set
-	if (Context && !DefaultDocument.IsEmpty())
+	// Fire callback so external code can register data models before the document loads.
+	if (OnContextReady)
+		OnContextReady(Context);
+
+	// Auto-load DocumentPath if set
+	if (Context && !DocumentPath.IsEmpty())
 	{
-		Rml::ElementDocument* Doc = Context->LoadDocument(TCHAR_TO_UTF8(*DefaultDocument));
+		Rml::ElementDocument* Doc = Context->LoadDocument(TCHAR_TO_UTF8(*DocumentPath));
 		if (Doc)
 			Doc->Show();
 	}
@@ -102,17 +107,66 @@ void URmlUiWidget::PrewarmFromSettings()
 	FRmlWarmer::WarmContext(PrewarmedContext, Entries, RI);
 }
 
-void URmlUiWidget::LoadDocument(const FString& DocumentPath)
+int32 URmlUiWidget::ReloadDocuments()
+{
+	Rml::Context* Ctx = GetContext();
+	if (!Ctx) return 0;
+
+	// Collect source URLs and visibility of all documents.
+	struct FDocInfo { Rml::String SourceURL; bool bVisible; };
+	Rml::Vector<FDocInfo> Docs;
+	for (int32 i = 0; i < Ctx->GetNumDocuments(); ++i)
+	{
+		Rml::ElementDocument* Doc = Ctx->GetDocument(i);
+		if (!Doc) continue;
+		// Skip internal documents (debugger, etc.) that have no source URL.
+		Rml::String URL = Doc->GetSourceURL();
+		if (URL.empty()) continue;
+		Docs.push_back({std::move(URL), Doc->IsVisible()});
+	}
+
+	// Close all collected documents (deferred — cleaned up on next Context::Update).
+	for (int32 i = Ctx->GetNumDocuments() - 1; i >= 0; --i)
+	{
+		Rml::ElementDocument* Doc = Ctx->GetDocument(i);
+		if (Doc && !Doc->GetSourceURL().empty())
+			Doc->Close();
+	}
+
+	// Re-load from disk.
+	int32 Count = 0;
+	for (const FDocInfo& Info : Docs)
+	{
+		Rml::ElementDocument* Doc = Ctx->LoadDocument(Info.SourceURL);
+		if (Doc)
+		{
+			if (Info.bVisible)
+				Doc->Show();
+			++Count;
+		}
+	}
+
+	OnDocumentsReloaded(Ctx);
+
+	return Count;
+}
+
+Rml::Context* URmlUiWidget::GetContext() const
+{
+	if (RmlSlateWidget.IsValid())
+		return RmlSlateWidget->Context();
+	return nullptr;
+}
+
+void URmlUiWidget::LoadDocument(const FString& InDocumentPath)
 {
 	if (!RmlSlateWidget.IsValid()) return;
 	Rml::Context* Ctx = RmlSlateWidget->Context();
 	if (!Ctx) return;
 
-	Rml::ElementDocument* Doc = Ctx->LoadDocument(TCHAR_TO_UTF8(*DocumentPath));
+	Rml::ElementDocument* Doc = Ctx->LoadDocument(TCHAR_TO_UTF8(*InDocumentPath));
 	if (Doc)
-	{
 		Doc->Show();
-	}
 }
 
 Rml::Element* URmlUiWidget::FindElementById(const FString& ElementId) const
@@ -137,6 +191,12 @@ void URmlUiWidget::SetElementAttribute(const FString& ElementId, const FString& 
 {
 	if (Rml::Element* El = FindElementById(ElementId))
 		El->SetAttribute(TCHAR_TO_UTF8(*Attribute), TCHAR_TO_UTF8(*Value));
+}
+
+void URmlUiWidget::EnableEmptyClickCapture()
+{
+	if (RmlSlateWidget.IsValid())
+		RmlSlateWidget->SetOnEmptyClick(FSimpleDelegate::CreateUObject(this, &URmlUiWidget::OnEmptyClick));
 }
 
 #if WITH_EDITOR

@@ -10,6 +10,7 @@ class URmlDemo : public URmlDocument
 protected:
 	// ~Begin URmlDocument API
 	virtual void OnInit() override;
+	virtual void OnPreReload() override;
 	virtual void OnKeyDown() override;
 	virtual void Tick(float DeltaTime) override;
 	// ~End URmlDocument API

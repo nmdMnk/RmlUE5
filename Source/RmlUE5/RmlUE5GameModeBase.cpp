@@ -7,7 +7,7 @@
 #include "Examples/RmlEffects.h"
 #include "Examples/RmlDrag.h"
 #include "Examples/RmlDataBinding.h"
-#include "Examples/RmlMockupInventory.h"
+#include "Examples/Inventory/RmlInventory.h"
 #include "RmlHelper.h"
 #include "RmlWarmer.h"
 #include "RmlUiSettings.h"
@@ -93,6 +93,13 @@ void ARmlUE5GameModeBase::BeginPlay()
 	// add widget to viewport
 	RmlWidget->AddToViewport(GetWorld());
 
+	// Empty-click deselection for inventory (clicks on 32:9 margins etc.)
+	RmlWidget->SetOnEmptyClick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+	{
+		if (Inventory && CurrentElement == Inventory)
+			Inventory->ClearSelection();
+	}));
+
 	// setup input mode
 	FInputModeGameAndUI InputMode;
 	InputMode.SetWidgetToFocus(RmlWidget.ToSharedRef());
@@ -102,11 +109,6 @@ void ARmlUE5GameModeBase::BeginPlay()
 
 	// enable cursor
 	GetWorld()->GetFirstPlayerController()->bShowMouseCursor = true;
-}
-
-void ARmlUE5GameModeBase::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
 }
 
 void ARmlUE5GameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -143,7 +145,7 @@ void ARmlUE5GameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (Effects) Effects->ShutDown();
 	if (Drag) Drag->ShutDownAll();
 	if (DataBinding) DataBinding->ShutDown();
-	if (MockupInventory) MockupInventory->ShutDown();
+	if (Inventory) Inventory->ShutDown();
 
 	// Shut down debugger BEFORE removing its host context — the debugger owns
 	// documents/elements inside the context that must be cleaned up first.
@@ -228,11 +230,12 @@ void ARmlUE5GameModeBase::_LoadDemos(const FString& InBasePath)
 	DataBinding->Init(Context, InBasePath + TEXT("data_binding.rml"));
 	DataBinding->SetNotifyObject(TEXT("Controller"), this);
 
-	// mockup inventory
-	MockupInventory = NewObject<URmlMockupInventory>(this);
-	MockupInventory->Init(Context, InBasePath + TEXT("mockupinventory.rml"));
-	MockupInventory->SetNotifyObject(TEXT("Controller"), this);
-	_SetDocumentTitle(MockupInventory);
+	// inventory (data model must exist before LoadDocument)
+	Inventory = NewObject<URmlInventory>(this);
+	Inventory->CreateDataModel(Context);
+	Inventory->Init(Context, InBasePath + TEXT("Inventory/inventory.rml"));
+	Inventory->SetNotifyObject(TEXT("Controller"), this);
+	_SetDocumentTitle(Inventory);
 }
 
 void ARmlUE5GameModeBase::OpenDemo() { _ChangeShowItem(MainDemo); }
@@ -243,7 +246,7 @@ void ARmlUE5GameModeBase::OpenSprites() { _ChangeShowItem(Sprites); }
 void ARmlUE5GameModeBase::OpenEffects() { _ChangeShowItem(Effects); }
 void ARmlUE5GameModeBase::OpenDrag() { _ChangeShowItem(Drag); }
 void ARmlUE5GameModeBase::OpenDataBinding() { _ChangeShowItem(DataBinding); }
-void ARmlUE5GameModeBase::OpenMockupInventory() { _ChangeShowItem(MockupInventory); }
+void ARmlUE5GameModeBase::OpenMockupInventory() { _ChangeShowItem(Inventory); }
 
 void ARmlUE5GameModeBase::CloseDemo()
 {
@@ -252,7 +255,7 @@ void ARmlUE5GameModeBase::CloseDemo()
 	_ChangeShowItem(nullptr);
 }
 
-void ARmlUE5GameModeBase::_SetDocumentTitle(URmlDocument* InDocument)
+void ARmlUE5GameModeBase::_SetDocumentTitle(const URmlDocument* InDocument)
 {
 	Rml::ElementDocument* Doc = InDocument->GetDocument();
 	if (!Doc) return;

@@ -10,6 +10,7 @@
 #include "RmlInterface/UERmlRenderInterface.h"
 #include "Logging.h"
 #include "RmlDocument.h"
+#include "RmlUiWidget.h"
 #include "RmlUi/Core.h"
 #include "FontEngineDefault/FontEngineInterfaceDefault.h"
 #include <algorithm>
@@ -191,7 +192,7 @@ static FAutoConsoleCommand GRmlReloadStyleSheets(
 static FAutoConsoleCommand GRmlReloadDocuments(
 	TEXT("rmlui.ReloadDocuments"),
 	TEXT("Fully reload all RmlUI documents from disk (hot-reload RML structure + RCSS).\n")
-	TEXT("Closes and reopens every document, calling OnInit() again to re-cache element pointers."),
+	TEXT("Handles both URmlDocument (game mode path) and URmlUiWidget (UMG widget path)."),
 	FConsoleCommandDelegate::CreateLambda([]()
 	{
 		if (!GRmlInitialized)
@@ -201,11 +202,20 @@ static FAutoConsoleCommand GRmlReloadDocuments(
 		}
 		Rml::Factory::ClearStyleSheetCache();
 		Rml::Factory::ClearTemplateCache();
+
+		// 1) Reload documents managed by URmlDocument subclasses (game mode path).
 		int32 Count = 0;
 		for (TObjectIterator<URmlDocument> It; It; ++It)
 		{
 			if (It->Reload()) ++Count;
 		}
+
+		// 2) Reload documents inside URmlUiWidget contexts (UMG widget path).
+		for (TObjectIterator<URmlUiWidget> It; It; ++It)
+		{
+			Count += It->ReloadDocuments();
+		}
+
 		UE_LOG(LogUERmlUI, Log, TEXT("rmlui.ReloadDocuments: reloaded %d document(s)"), Count);
 	}));
 #endif

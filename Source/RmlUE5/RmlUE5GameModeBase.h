@@ -15,7 +15,7 @@ class URmlTransform;
 class URmlEffects;
 class URmlDrag;
 class URmlDataBinding;
-class URmlMockupInventory;
+class URmlInventory;
 namespace Rml { class Context; }
 
 UCLASS()
@@ -26,12 +26,11 @@ public:
 	ARmlUE5GameModeBase();
 
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 private:
 	void _LoadDemos(const FString& InBasePath);
 	void _ChangeShowItem(URmlDocument* InDocument);
-	static void _SetDocumentTitle(URmlDocument* InDocument);
+	static void _SetDocumentTitle(const URmlDocument* InDocument);
 
 	// !Begin Event
 	UFUNCTION()
@@ -97,7 +96,7 @@ private:
 	TObjectPtr<URmlDataBinding>	DataBinding;
 
 	UPROPERTY()
-	TObjectPtr<URmlMockupInventory>	MockupInventory;
+	TObjectPtr<URmlInventory>	Inventory;
 
 	UPROPERTY()
 	TObjectPtr<URmlDocument>	CurrentElement;

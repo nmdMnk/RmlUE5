@@ -12,10 +12,14 @@ class UERMLUI_API SRmlWidget : public SLeafWidget
 		: _InitContext(nullptr)
 		, _InitSystemInterface(nullptr)
 		, _InitEnableRml(true)
+		, _InitHandleCursor(true)
 	{}
 		SLATE_ARGUMENT(Rml::Context*, InitContext)
 		SLATE_ARGUMENT(FUERmlSystemInterface*, InitSystemInterface)
 		SLATE_ARGUMENT(bool, InitEnableRml)
+		SLATE_ARGUMENT(bool, InitHandleCursor)
+		/** Fired when user clicks on empty space (no RmlUi element under cursor). */
+		SLATE_EVENT(FSimpleDelegate, OnEmptyClick)
 	SLATE_END_ARGS()
 public:
 	void Construct(const FArguments& InArgs);
@@ -25,6 +29,7 @@ public:
 	
 	void Context(Rml::Context* InContext) { BoundContext = InContext; }
 	Rml::Context* Context() const { return BoundContext; }
+	void SetOnEmptyClick(FSimpleDelegate InDelegate) { OnEmptyClick = MoveTemp(InDelegate); }
 protected:
 	// ~Begin SWidget API
 	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
@@ -49,6 +54,7 @@ protected:
 	// ~End SWidget API
 private:
 	bool					bEnableRml;
+	bool					bHandleCursor;
 	Rml::Context*			BoundContext;
 	FUERmlSystemInterface*	CachedSystemInterface = nullptr;
 	bool					bNeedsWarmupSettle = true;
@@ -62,6 +68,11 @@ private:
 	// cursor was dragged outside before release — ProcessMouseLeave fires normally
 	// to clear stale :hover/:active pseudo-classes.
 	bool					bReleasingCapture = false;
+	// True when a left-click on empty space (no RmlUI element) was captured in
+	// OnMouseButtonDown. Only then will OnMouseButtonUp fire the OnEmptyClick
+	// delegate, preventing false positives from right/middle clicks or
+	// mismatched down/up sequences.
+	bool					bEmptyClickArmed = false;
 
 	// Context-level scaling state — when a document with ui_base_width is visible,
 	// the context is extended to cover the full viewport (in logical coords) and
@@ -73,4 +84,5 @@ private:
 	// Cached at Construct() — Rml::GetRenderInterface() is global and invariant
 	// after Rml::Initialise(). Avoids repeated static_cast every paint/tick.
 	FUERmlRenderInterface*	CachedRenderInterface = nullptr;
+	FSimpleDelegate			OnEmptyClick;
 };
