@@ -231,6 +231,7 @@ class FRmlLayerStack
 {
 public:
 	void EnsureResources(FRHICommandListImmediate& RHICmdList, const FIntPoint& Size, EPixelFormat Format, int32 NumSamples);
+	FIntPoint EnsureBlurResources(FRHICommandListImmediate& RHICmdList, bool bHalfRes);
 	void Reset();
 
 	// Push a new layer, returning its index
@@ -344,6 +345,7 @@ public:
 	void MarkUsing() { bIsFree = false; }
 	void MarkFree()  { bIsFree = true; }
 	void SetMSAASamples(int32 Samples) { MSAASamples = FMath::Max(Samples, 1); bUseMSAA = MSAASamples > 1; }
+	void SetHalfResBlur(bool b) { bHalfResBlur = b; }
 
 	// Compiled shader storage (owned by RenderInterface, shared via pointer)
 	TMap<Rml::CompiledShaderHandle, TSharedPtr<FCompiledRmlShader>>* CompiledShaders = nullptr;
@@ -352,6 +354,7 @@ private:
 	TArray<FRmlDrawCommand>	CommandList;
 	bool					bIsFree;
 	bool					bUseMSAA = true;
+	bool					bHalfResBlur = false;
 	int32					MSAASamples = 4;
 
 	// Render resources

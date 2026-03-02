@@ -158,7 +158,7 @@ Rml::TextureHandle FUERmlRenderInterface::LoadTexture(
 	}
 	// ResolvedFilePath == SourcePath for asset paths (/Game/...) — safe to use as cache key always.
 
-	auto FoundTexture = AllTextures.Find(ResolvedFilePath);
+	FRmlTextureEntryPtr* FoundTexture = AllTextures.Find(ResolvedFilePath);
 	if (FoundTexture)
 	{
 		texture_dimensions.x = (*FoundTexture)->BoundTexture->GetSurfaceWidth();
@@ -175,7 +175,7 @@ Rml::TextureHandle FUERmlRenderInterface::LoadTexture(
 
 	if (!LoadedTexture) return 0;
 
-	auto& AddedTexture = AllTextures.Add(ResolvedFilePath, MakeShared<FRmlTextureEntry, ESPMode::ThreadSafe>(LoadedTexture, ResolvedFilePath));
+	FRmlTextureEntryPtr& AddedTexture = AllTextures.Add(ResolvedFilePath, MakeShared<FRmlTextureEntry, ESPMode::ThreadSafe>(LoadedTexture, ResolvedFilePath));
 	AddedTexture->bPremultiplied = false;
 	AddedTexture->bWrapSampler = true;	// Both file and asset textures must support wrapped sampling in decorators.
 	texture_dimensions.x = LoadedTexture->GetSurfaceWidth();
@@ -212,7 +212,7 @@ Rml::TextureHandle FUERmlRenderInterface::GenerateTexture(
 	{
 		if (Pool->Num() > 0)
 		{
-			auto Reused = Pool->Pop();
+			TSharedPtr<FRmlTextureEntry, ESPMode::ThreadSafe> Reused = Pool->Pop();
 			UTexture2D* Tex = Cast<UTexture2D>(Reused->BoundTexture.Get());
 			if (Tex)
 			{
@@ -225,7 +225,7 @@ Rml::TextureHandle FUERmlRenderInterface::GenerateTexture(
 					[](uint8* D, const FUpdateTextureRegion2D* R) { delete[] D; delete R; });
 			}
 
-			auto& Entry = AllCreatedTextures.Add_GetRef(Reused);
+			FRmlTextureEntryPtr& Entry = AllCreatedTextures.Add_GetRef(Reused);
 
 			if (CurrentDrawer.IsValid())
 			{
@@ -245,7 +245,7 @@ Rml::TextureHandle FUERmlRenderInterface::GenerateTexture(
 		(const uint8*)source.data(),
 		FIntPoint(source_dimensions.x, source_dimensions.y));
 
-	auto& Entry = AllCreatedTextures.Add_GetRef(MakeShared<FRmlTextureEntry, ESPMode::ThreadSafe>(Texture));
+	FRmlTextureEntryPtr& Entry = AllCreatedTextures.Add_GetRef(MakeShared<FRmlTextureEntry, ESPMode::ThreadSafe>(Texture));
 	Entry->bPremultiplied = true;
 
 	if (CurrentDrawer.IsValid())
@@ -274,7 +274,7 @@ void FUERmlRenderInterface::ReleaseTexture(Rml::TextureHandle texture)
 	{
 		if (AllCreatedTextures[i].Get() == RawPtr)
 		{
-			auto Entry = AllCreatedTextures[i];
+			TSharedPtr<FRmlTextureEntry, ESPMode::ThreadSafe> Entry = AllCreatedTextures[i];
 			AllCreatedTextures.RemoveAtSwap(i);
 
 			// Pool the entry for future reuse (FGCObject prevents UTexture2D from being GC'd).
@@ -329,9 +329,10 @@ void FUERmlRenderInterface::PreallocateTextureReserves()
 		const int32 Width  = static_cast<int32>(Pair.Key >> 32);
 		const int32 Height = static_cast<int32>(Pair.Key & 0xFFFFFFFF);
 
-		auto& Pool = TextureDimensionPool.FindOrAdd(Pair.Key);
+		TArray<FRmlTextureEntryPtr>& Pool = TextureDimensionPool.FindOrAdd(Pair.Key);
 		const int32 ToAdd = FMath::Max(0, Pair.Value - Pool.Num());
 
+		Pool.Reserve(Pool.Num() + ToAdd);
 		for (int32 i = 0; i < ToAdd; ++i)
 		{
 			// Match LoadTextureFromRaw settings exactly.
@@ -499,7 +500,7 @@ Rml::TextureHandle FUERmlRenderInterface::SaveLayerAsTexture()
 
 	// Pre-allocate a texture entry on the game thread. The render thread will
 	// fill in OverrideRHI with the actual GPU texture via ExecuteSaveLayerAsTexture.
-	auto& Entry = AllCreatedTextures.Add_GetRef(MakeShared<FRmlTextureEntry, ESPMode::ThreadSafe>());
+	FRmlTextureEntryPtr& Entry = AllCreatedTextures.Add_GetRef(MakeShared<FRmlTextureEntry, ESPMode::ThreadSafe>());
 	Entry->bPremultiplied = true;	// layer content is already premultiplied
 	Entry->bIsSavedLayer  = true;	// cached callback texture — needs pixel-aligned rendering
 
@@ -514,7 +515,7 @@ Rml::TextureHandle FUERmlRenderInterface::SaveLayerAsTexture()
 	FIntPoint IdealSize(ScissorRect.Width(), ScissorRect.Height());
 	if (bUseClipRect)
 	{
-		auto TransRect = TransformRect(RmlWidgetRenderTransform, ClipRect);
+		FSlateRect TransRect = TransformRect(RmlWidgetRenderTransform, ClipRect);
 		IdealSize.X = FMath::Max(1, FMath::RoundToInt(TransRect.Right - TransRect.Left));
 		IdealSize.Y = FMath::Max(1, FMath::RoundToInt(TransRect.Bottom - TransRect.Top));
 	}
@@ -874,7 +875,10 @@ void FUERmlRenderInterface::ReleaseShader(Rml::CompiledShaderHandle shader)
 
 TSharedPtr<FRmlDrawer, ESPMode::ThreadSafe> FUERmlRenderInterface::_AllocDrawer()
 {
-	const int32 SampleCount = URmlUiSettings::Get()->GetMSAASampleCount();
+	const URmlUiSettings* Settings = URmlUiSettings::Get();
+	check(Settings);
+	const int32 SampleCount = Settings->GetMSAASampleCount();
+	const bool bHalfResBlur = Settings->IsHalfResBlur();
 
 	// Find a free drawer or create one.
 	TSharedPtr<FRmlDrawer, ESPMode::ThreadSafe>* Found = nullptr;
@@ -894,6 +898,7 @@ TSharedPtr<FRmlDrawer, ESPMode::ThreadSafe> FUERmlRenderInterface::_AllocDrawer(
 	}
 
 	(*Found)->SetMSAASamples(SampleCount);
+	(*Found)->SetHalfResBlur(bHalfResBlur);
 	(*Found)->CompiledShaders = &CompiledShaders;
 	return *Found;
 }

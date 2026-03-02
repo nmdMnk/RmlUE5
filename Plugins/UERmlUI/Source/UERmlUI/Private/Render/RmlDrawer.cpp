@@ -53,21 +53,35 @@ void FRmlLayerStack::EnsureResources(FRHICommandListImmediate& RHICmdList, const
 
 	PostprocessA = CreatePostprocess(TEXT("RmlUI_PostA"));
 	PostprocessB = CreatePostprocess(TEXT("RmlUI_PostB"));
-	// FP16 blur buffers — the entire downsample→blur→upsample chain runs in FP16
-	// to avoid repeated 8-bit quantization of alpha gradients (box-shadow, filter:blur).
-	// PostprocessBlurSrc + PostprocessTemp form a matched FP16 pair for RenderBlur.
+
+	// FP16 blur buffers + BlendMask allocated lazily on first use
+	PostprocessTemp.SafeRelease();
+	PostprocessBlurSrc.SafeRelease();
+	BlendMaskRT.SafeRelease();
+}
+
+FIntPoint FRmlLayerStack::EnsureBlurResources(FRHICommandListImmediate& RHICmdList, bool bHalfRes)
+{
+	const FIntPoint BlurSize = bHalfRes
+		? FIntPoint(FMath::Max(CachedSize.X / 2, 1), FMath::Max(CachedSize.Y / 2, 1))
+		: CachedSize;
+
+	if (PostprocessBlurSrc.IsValid()
+		&& (int32)PostprocessBlurSrc->GetSizeX() == BlurSize.X
+		&& (int32)PostprocessBlurSrc->GetSizeY() == BlurSize.Y
+		&& PostprocessTemp.IsValid())
+		return BlurSize;
+
 	auto CreateFP16 = [&](const TCHAR* Name) -> FTextureRHIRef
 	{
-		FRHITextureCreateDesc Desc = FRHITextureCreateDesc::Create2D(Name, Size.X, Size.Y, PF_FloatRGBA);
+		FRHITextureCreateDesc Desc = FRHITextureCreateDesc::Create2D(Name, BlurSize.X, BlurSize.Y, PF_FloatRGBA);
 		Desc.Flags = ETextureCreateFlags::RenderTargetable | ETextureCreateFlags::ShaderResource;
 		Desc.ClearValue = FClearValueBinding::Transparent;
 		return RHICmdList.CreateTexture(Desc);
 	};
-	PostprocessTemp = CreateFP16(TEXT("RmlUI_PostTemp"));
 	PostprocessBlurSrc = CreateFP16(TEXT("RmlUI_BlurSrc"));
-
-	// BlendMask allocated lazily
-	BlendMaskRT.SafeRelease();
+	PostprocessTemp = CreateFP16(TEXT("RmlUI_PostTemp"));
+	return BlurSize;
 }
 
 void FRmlLayerStack::Reset()
@@ -913,14 +927,17 @@ FTextureRHIRef* FRmlDrawer::ApplyFilters(FRHICommandListImmediate& RHICmdList, c
 	// Blit between textures via passthrough shader (handles format conversion, e.g. 8-bit↔FP16).
 	// bClear=true: fast-clear target to transparent before scissored draw — required before
 	// blur so that the kernel reads transparent (not undefined) outside the element bounds.
-	auto BlitScissored = [&](FTextureRHIRef& ReadTex, FTextureRHIRef& WriteTex, const TCHAR* DebugName, bool bClear = false)
+	auto BlitScissored = [&](FTextureRHIRef& ReadTex, FTextureRHIRef& WriteTex, const TCHAR* DebugName,
+		bool bClear = false, const FIntPoint* OverrideVpSize = nullptr, const FIntRect* OverrideScissor = nullptr)
 	{
+		const FIntPoint VpSize = OverrideVpSize ? *OverrideVpSize : RTSize;
+		const FIntRect Scissor = OverrideScissor ? *OverrideScissor : ScissorRect;
 		ERenderTargetActions Actions = bClear ? ERenderTargetActions::Clear_Store : ERenderTargetActions::DontLoad_Store;
 		FRHIRenderPassInfo PassInfo(WriteTex, Actions);
 		RHICmdList.BeginRenderPass(PassInfo, DebugName);
-		RHICmdList.SetViewport(0, 0, 0.0f, (float)RTSize.X, (float)RTSize.Y, 1.0f);
-		RHICmdList.SetScissorRect(true, ScissorRect.Min.X, ScissorRect.Min.Y,
-			ScissorRect.Max.X, ScissorRect.Max.Y);
+		RHICmdList.SetViewport(0, 0, 0.0f, (float)VpSize.X, (float)VpSize.Y, 1.0f);
+		RHICmdList.SetScissorRect(true, Scissor.Min.X, Scissor.Min.Y,
+			Scissor.Max.X, Scissor.Max.Y);
 
 		auto* NoBlend = TStaticBlendState<>::GetRHI();
 		FGraphicsPipelineStateInitializer PSO;
@@ -995,11 +1012,22 @@ FTextureRHIRef* FRmlDrawer::ApplyFilters(FRHICommandListImmediate& RHICmdList, c
 			// GL3-style downsample → blur → upsample.
 			// Run the entire chain in FP16 to avoid repeated 8-bit quantization
 			// of alpha gradients (box-shadow, drop-shadow, filter:blur).
-			// PostprocessBlurSrc + PostprocessTemp are both FP16.
-			// bClear=true for BlurToFP16: ensures transparent outside scissor so blur
-			// kernel reads zeros (not undefined) at the boundary.
-			BlitScissored(*Src, LayerStack.PostprocessBlurSrc, TEXT("RmlUI_BlurToFP16"), /*bClear=*/true);
-			RenderBlur(RHICmdList, Filter.Sigma, LayerStack.PostprocessBlurSrc, LayerStack.PostprocessTemp, Vs, BlurPs, RTSize, ScissorRect);
+			// PostprocessBlurSrc + PostprocessTemp are both FP16, allocated lazily.
+			// When bHalfResBlur, buffers are half the viewport size for reduced bandwidth.
+			const FIntPoint BlurSize = LayerStack.EnsureBlurResources(RHICmdList, bHalfResBlur);
+			// Scale scissor to blur RT coords (round outward to avoid clipping edge pixels)
+			const FIntRect BlurScissor = bHalfResBlur
+				? FIntRect(ScissorRect.Min / 2, (ScissorRect.Max + FIntPoint(1, 1)) / 2)
+				: ScissorRect;
+
+			// Blit full-res → blur RT (downsample if half-res via bilinear filtering)
+			// bClear=true: ensures transparent outside scissor so blur kernel reads zeros.
+			BlitScissored(*Src, LayerStack.PostprocessBlurSrc, TEXT("RmlUI_BlurToFP16"),
+				/*bClear=*/true, &BlurSize, &BlurScissor);
+			// Halve sigma for half-res: maintains same visual spread in screen-space
+			const float EffSigma = bHalfResBlur ? Filter.Sigma * 0.5f : Filter.Sigma;
+			RenderBlur(RHICmdList, EffSigma, LayerStack.PostprocessBlurSrc, LayerStack.PostprocessTemp, Vs, BlurPs, BlurSize, BlurScissor);
+			// Blit blur RT → full-res (upsample if half-res via bilinear filtering)
 			BlitScissored(LayerStack.PostprocessBlurSrc, *Src, TEXT("RmlUI_BlurFromFP16"));
 			// Result is back in *Src — no swap needed.
 			break;
@@ -1038,10 +1066,18 @@ FTextureRHIRef* FRmlDrawer::ApplyFilters(FRHICommandListImmediate& RHICmdList, c
 
 			// Step 2: Blur Dst in-place using GL3-style downsample → blur → upsample
 			// Run in FP16 to avoid 8-bit quantization of alpha gradients.
+			// When bHalfResBlur, operates at half resolution for reduced bandwidth.
 			if (Filter.Sigma > 0.0f)
 			{
-				BlitScissored(*Dst, LayerStack.PostprocessBlurSrc, TEXT("RmlUI_DropShadowBlurToFP16"), /*bClear=*/true);
-				RenderBlur(RHICmdList, Filter.Sigma, LayerStack.PostprocessBlurSrc, LayerStack.PostprocessTemp, Vs, BlurPs, RTSize, ScissorRect);
+				const FIntPoint BlurSize = LayerStack.EnsureBlurResources(RHICmdList, bHalfResBlur);
+				const FIntRect BlurScissor = bHalfResBlur
+					? FIntRect(ScissorRect.Min / 2, (ScissorRect.Max + FIntPoint(1, 1)) / 2)
+					: ScissorRect;
+
+				BlitScissored(*Dst, LayerStack.PostprocessBlurSrc, TEXT("RmlUI_DropShadowBlurToFP16"),
+					/*bClear=*/true, &BlurSize, &BlurScissor);
+				const float EffSigma = bHalfResBlur ? Filter.Sigma * 0.5f : Filter.Sigma;
+				RenderBlur(RHICmdList, EffSigma, LayerStack.PostprocessBlurSrc, LayerStack.PostprocessTemp, Vs, BlurPs, BlurSize, BlurScissor);
 				BlitScissored(LayerStack.PostprocessBlurSrc, *Dst, TEXT("RmlUI_DropShadowBlurFromFP16"));
 			}
 

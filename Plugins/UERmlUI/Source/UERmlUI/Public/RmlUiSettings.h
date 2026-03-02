@@ -13,6 +13,13 @@ enum class ERmlMSAASamples : uint8
 	x8        UMETA(DisplayName = "8x"),
 };
 
+UENUM(BlueprintType)
+enum class ERmlBlurQuality : uint8
+{
+	Full  UMETA(DisplayName = "Full Resolution"),
+	Half  UMETA(DisplayName = "Half Resolution"),
+};
+
 /** One entry in the warmup document list. */
 USTRUCT()
 struct UERMLUI_API FRmlWarmupDocumentEntry
@@ -57,6 +64,13 @@ public:
 	}
 
 	bool IsMSAAEnabled() const { return MSAASamples != ERmlMSAASamples::Disabled; }
+
+	// Resolution for blur and drop-shadow filter effects.
+	// Half resolution reduces GPU bandwidth with minimal visual quality loss.
+	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Performance")
+	ERmlBlurQuality BlurQuality = ERmlBlurQuality::Half;
+
+	bool IsHalfResBlur() const { return BlurQuality == ERmlBlurQuality::Half; }
 
 	// Documents to pre-warm before showing the first RmlUi widget.
 	// Use rmlui.CaptureWarmup 1 in PIE to auto-populate this list, then stop PIE.
