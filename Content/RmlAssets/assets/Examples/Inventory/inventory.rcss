@@ -1,11 +1,3 @@
-@spritesheet tooltip-sheet
-{
-	src: /Game/Texture/Inventory/slot_frame.slot_frame;
-	resolution: 1x;
-	tt-frame-outer: 0px 0px 128px 128px;
-	tt-frame-inner: 5px 5px 118px 118px;
-}
-
 @spritesheet scroll-track-sheet
 {
 	src: /Game/Texture/Inventory/scroll_track.scroll_track;
@@ -157,11 +149,7 @@ span.currency-value.gem
 	color: #49f6f8ff;
 }
 
-span.runes-icon
-{
-	display: none;
-}
-
+span.runes-icon,
 span.runes-value
 {
 	display: none;
@@ -208,7 +196,7 @@ div.left-column
 	position: absolute;
 	left: 100dp;
 	top: 154dp;
-	width: 684dp;
+	width: 699dp;
 	z-index: 40;
 }
 
@@ -225,9 +213,9 @@ div#inv-grid-container
 	left: 0;
 	top: 0;
 	box-sizing: border-box;
-	width: 100%;
+	width: 699dp;
 	height: 530dp;
-	padding-right: 14dp;
+	padding-right: 24dp;
 	overflow-x: hidden;
 	overflow-y: auto;
 	z-index: 1;
@@ -237,8 +225,150 @@ div#inv-grid
 {
 	display: block;
 	width: 100%;
-	min-height: 100%;
+	min-height: 0;
 	background-color: #0a151eff;
+}
+
+div.inv-count
+{
+	display: block;
+	position: absolute;
+	top: 615dp;
+	right: 0;
+	box-sizing: border-box;
+	width: 100%;
+	z-index: 80;
+	text-align: right;
+	white-space: nowrap;
+	font-family: LatoLatin;
+	font-size: 18dp;
+	font-weight: bold;
+	color: #4f7d8dff;
+	font-effect: shadow(1dp 1dp #021520ff);
+}
+
+div#selected-item-panel
+{
+	display: block;
+	box-sizing: border-box;
+	position: relative;
+	width: 670dp;
+	height: 223dp;
+	margin-top: 44dp;
+	padding: 16dp 18dp;
+	background-color: #ffb7231a;
+	border: 0;
+	overflow: hidden;
+}
+
+div#selected-item-panel div.selection-details
+{
+	display: block;
+	position: absolute;
+	left: 18dp;
+	top: 16dp;
+	right: 18dp;
+	bottom: 16dp;
+	padding-bottom: 30dp;
+	overflow: hidden;
+}
+
+div#selected-item-panel span.selection-title
+{
+	display: block;
+	font-family: LatoLatin;
+	font-size: 36dp;
+	font-weight: bold;
+	line-height: 40dp;
+	height: 40dp;
+	color: #ffb723ff;
+	font-effect: shadow(1dp 1dp #000000aa);
+	margin-bottom: 8dp;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+div#selected-item-panel span.selection-equipped-tag
+{
+	display: inline-block;
+	margin-left: 10dp;
+	color: #ffb723ff;
+	font-size: 30dp;
+	font-weight: normal;
+	line-height: 40dp;
+	vertical-align: baseline;
+}
+
+div#selected-item-panel div.selection-body
+{
+	display: block;
+}
+
+div#selected-item-panel div.selection-body span.details-title
+{
+	display: none;
+}
+
+div#selected-item-panel span.details-rarity
+{
+	display: block;
+	position: absolute;
+	top: 0;
+	right: 0;
+	font-family: LatoLatin;
+	font-size: 16dp;
+	line-height: 40dp;
+	text-align: right;
+	color: #ffb723ff;
+}
+
+div#selected-item-panel span.details-type
+{
+	display: block;
+	margin-top: 2dp;
+	font-family: LatoLatin;
+	font-size: 16dp;
+	line-height: 20dp;
+	color: #e4d7c1ff;
+}
+
+div#selected-item-panel div.details-separator
+{
+	display: none;
+}
+
+div#selected-item-panel span.details-flavor
+{
+	display: block;
+	margin-top: 10dp;
+	font-family: LatoLatin;
+	font-size: 14dp;
+	line-height: 20dp;
+	color: #a3a3a2ff;
+	white-space: normal;
+	max-height: 92dp;
+	overflow: hidden;
+}
+
+div#selected-item-panel div.details-stats-row
+{
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+div#selected-item-panel span.details-stat
+{
+	display: inline-block;
+	margin-top: 0;
+	margin-right: 8dp;
+	font-family: LatoLatin;
+	font-size: 20dp;
+	line-height: 24dp;
+	color: #e4d7c1ff;
 }
 
 div#inv-grid-container scrollbarvertical
@@ -248,6 +378,7 @@ div#inv-grid-container scrollbarvertical
 	decorator: none;
 	clip: always;
 	position: relative;
+	left: -10dp;
 	z-index: 70;
 }
 
@@ -268,13 +399,6 @@ div#inv-grid-container scrollbarvertical sliderbar
 	decorator: none;
 }
 
-div#inv-grid-container scrollbarvertical sliderbar:hover,
-div#inv-grid-container scrollbarvertical sliderbar:active,
-div#inv-grid-container scrollbarvertical sliderbar:focus
-{
-	background-color: #ffbf31ff;
-}
-
 div#inv-grid-container scrollbarvertical sliderarrowdec,
 div#inv-grid-container scrollbarvertical sliderarrowinc
 {
@@ -292,7 +416,7 @@ div.slot
 	height: 110dp;
 	padding: 0;
 	margin-right: 30dp;
-	margin-bottom: 30dp;
+	margin-bottom: 0;
 	overflow: visible;
 	z-index: 10;
 }
@@ -307,6 +431,11 @@ div#inv-grid > div.slot:nth-child(5n)
 	margin-right: 0;
 }
 
+div#inv-grid > div.slot:nth-child(n+6)
+{
+	margin-top: 30dp;
+}
+
 div.item
 {
 	display: block;
@@ -319,10 +448,7 @@ div.item
 	width: auto;
 	height: auto;
 	padding: 6%;
-	border-top: 3dp #2d5f70ff;
-	border-right: 3dp #2d5f70ff;
-	border-bottom: 3dp #2d5f70ff;
-	border-left: 3dp #2d5f70ff;
+	border: 3dp #2d5f70ff;
 	background-color: #031c2eff;
 	drag: clone;
 	cursor: move;
@@ -344,19 +470,13 @@ div.corner-chip
 /* Weapon equipped (show_chip == 1): grey */
 div.item.equipped
 {
-	border-top: 3dp #9aa4b2ff;
-	border-right: 3dp #9aa4b2ff;
-	border-bottom: 3dp #9aa4b2ff;
-	border-left: 3dp #9aa4b2ff;
+	border: 3dp #9aa4b2ff;
 }
 
 /* Armor equipped (show_chip == 2): cyan */
 div.item.equipped-cyan
 {
-	border-top: 3dp #57e8ffff;
-	border-right: 3dp #57e8ffff;
-	border-bottom: 3dp #57e8ffff;
-	border-left: 3dp #57e8ffff;
+	border: 3dp #57e8ffff;
 }
 
 div.item.equipped-cyan div.corner-chip
@@ -366,28 +486,12 @@ div.item.equipped-cyan div.corner-chip
 
 div.item.selected-yellow
 {
-	border-top: 3dp #ffbf31ff;
-	border-right: 3dp #ffbf31ff;
-	border-bottom: 3dp #ffbf31ff;
-	border-left: 3dp #ffbf31ff;
+	border: 3dp #ffbf31ff;
 }
 
 div.item.selected-yellow div.corner-chip
 {
 	background-color: #ffbf31ff;
-}
-
-div.item.selected-cyan
-{
-	border-top: 3dp #57e8ffff;
-	border-right: 3dp #57e8ffff;
-	border-bottom: 3dp #57e8ffff;
-	border-left: 3dp #57e8ffff;
-}
-
-div.item.selected-cyan div.corner-chip
-{
-	background-color: #57e8ffff;
 }
 
 /* Drag clone gets pseudo-class :drag and is rendered under cursor proxy.
@@ -402,18 +506,12 @@ div.item:drag
 	bottom: auto;
 	padding: 6dp;
 	margin: 0;
-	border-top: 3dp #ffbf31ff;
-	border-right: 3dp #ffbf31ff;
-	border-bottom: 3dp #ffbf31ff;
-	border-left: 3dp #ffbf31ff;
+	border: 3dp #ffbf31ff;
 }
 
 div.item:hover
 {
-	border-top: 3dp #ff4444ff;
-	border-right: 3dp #ff4444ff;
-	border-bottom: 3dp #ff4444ff;
-	border-left: 3dp #ff4444ff;
+	border: 3dp #ffbf31ff;
 	z-index: 80;
 }
 
@@ -429,11 +527,13 @@ div.item-empty
 	width: auto;
 	height: auto;
 	padding: 6%;
-	border-top: 3dp #2d5f70ff;
-	border-right: 3dp #2d5f70ff;
-	border-bottom: 3dp #2d5f70ff;
-	border-left: 3dp #2d5f70ff;
+	border: 3dp #2d5f70ff;
 	background-color: #031729ff;
+}
+
+div.item-empty:hover
+{
+	border: 3dp #ffbf31ff;
 }
 
 div.item-icon
@@ -465,95 +565,12 @@ span.item-qty
 {
 	display: block;
 	position: absolute;
-	right: 8dp;
-	bottom: 4dp;
+	right: 4dp;
+	bottom: 0;
 	font-size: 18dp;
 	font-weight: bold;
 	color: #4f7d8dff;
 	font-effect: shadow(1dp 1dp #021520ff);
-}
-
-/* ===================== TOOLTIP ===================== */
-
-div.tooltip
-{
-	position: absolute;
-	left: 104%;
-	top: -3dp;
-	width: 190%;
-	box-sizing: border-box;
-	clip: 1;
-	padding: 10dp;
-	background-color: #1f2a25f0;
-	border-top: 2dp #6a7d61ff;
-	border-right: 2dp #6a7d61ff;
-	border-bottom: 2dp #6a7d61ff;
-	border-left: 2dp #6a7d61ff;
-	visibility: hidden;
-	opacity: 0;
-	transition: opacity 0.12s sine-in-out;
-	z-index: 300;
-	pointer-events: none;
-}
-
-div.item:hover div.tooltip
-{
-	visibility: visible;
-	opacity: 1;
-	z-index: 500;
-}
-
-span.tt-name
-{
-	display: block;
-	font-family: LatoLatin;
-	font-size: 18dp;
-	font-weight: bold;
-	color: #e8dcc0ff;
-	font-effect: shadow(1dp 1dp #000000cc);
-	margin-bottom: 3dp;
-}
-
-span.tt-type
-{
-	display: block;
-	font-family: LatoLatin;
-	font-size: 14dp;
-	color: #8a7a58ff;
-	margin-bottom: 6dp;
-}
-
-/* Rarity colors — span prefix for specificity over span.tt-name etc. */
-span.rarity-common    { color: #888888ff; }
-span.rarity-uncommon  { color: #1eff00ff; }
-span.rarity-rare      { color: #0070ddff; }
-span.rarity-epic      { color: #a335eeff; }
-span.rarity-legendary { color: #ff8000ff; }
-
-div.tt-sep
-{
-	display: block;
-	border-bottom: 1dp #3a3428ff;
-	margin: 5dp 0;
-}
-
-span.tt-stat
-{
-	display: block;
-	font-family: LatoLatin;
-	font-size: 14dp;
-	color: #c8bfa0ff;
-	line-height: 18dp;
-}
-
-span.tt-flavor
-{
-	display: block;
-	font-family: LatoLatin;
-	font-size: 13dp;
-	color: #6a6050ff;
-	white-space: normal;
-	margin-top: 6dp;
 }
 
 /* ===================== EQUIP PANEL ===================== */
@@ -591,7 +608,7 @@ div.weapon-block:nth-child(1) { top: 0dp; }
 div.weapon-block:nth-child(2) { top: 228dp; }
 div.weapon-block:nth-child(3) { top: 456dp; }
 
-div.equip-armor
+div.equip-accessories
 {
 	position: absolute;
 	left: 1607dp;
@@ -629,10 +646,7 @@ div.equip-slot
 	top: 24dp;
 	margin: 0;
 	background-color: transparent;
-	border-top: 3dp #9aa4b2ff;
-	border-right: 3dp #9aa4b2ff;
-	border-bottom: 3dp #9aa4b2ff;
-	border-left: 3dp #9aa4b2ff;
+	border: 3dp #9aa4b2ff;
 }
 
 div.equip-subslot
@@ -645,40 +659,26 @@ div.equip-subslot
 	height: 67dp;
 	padding-bottom: 0;
 	background-color: transparent;
-	border-top: 3dp #9aa4b2ff;
-	border-right: 3dp #9aa4b2ff;
-	border-bottom: 3dp #9aa4b2ff;
-	border-left: 3dp #9aa4b2ff;
+	border: 3dp #9aa4b2ff;
 	z-index: 10;
 }
 
 div.equip-subslot:hover
 {
-	border-top-color: #ff4444ff;
-	border-right-color: #ff4444ff;
-	border-bottom-color: #ff4444ff;
-	border-left-color: #ff4444ff;
-	z-index: 80;
+	border-color: #ffbf31ff;
 }
 
-div.equip-slot.slot-main      { left: 71dp; }
-div.equip-slot.slot-secondary { left: 71dp; }
-div.equip-slot.slot-range     { left: 71dp; }
-
-div.equip-slot.selected-yellow
+div.equip-slot.slot-main,
+div.equip-slot.slot-secondary,
+div.equip-slot.slot-range
 {
-	border-top-color: #ffbf31ff;
-	border-right-color: #ffbf31ff;
-	border-bottom-color: #ffbf31ff;
-	border-left-color: #ffbf31ff;
+	left: 71dp;
 }
 
+div.equip-slot.selected-yellow,
 div.equip-slot:hover
 {
-	border-top-color: #ff4444ff;
-	border-right-color: #ff4444ff;
-	border-bottom-color: #ff4444ff;
-	border-left-color: #ff4444ff;
+	border-color: #ffbf31ff;
 }
 
 div.equip-slot-sm
@@ -692,31 +692,31 @@ div.equip-slot-sm
 	overflow: hidden;
 }
 
-div.equip-armor div.equip-slot-sm:nth-child(1)
+div.equip-accessories div.equip-slot-sm:nth-child(1)
 {
 	left: 0dp;
 	top: 0dp;
 }
 
-div.equip-armor div.equip-slot-sm:nth-child(2)
+div.equip-accessories div.equip-slot-sm:nth-child(2)
 {
 	left: 88dp;
 	top: 155dp;
 }
 
-div.equip-armor div.equip-slot-sm:nth-child(3)
+div.equip-accessories div.equip-slot-sm:nth-child(3)
 {
 	left: 0dp;
 	top: 310dp;
 }
 
-div.equip-armor div.equip-slot-sm:nth-child(4)
+div.equip-accessories div.equip-slot-sm:nth-child(4)
 {
 	left: 88dp;
 	top: 465dp;
 }
 
-div.equip-armor div.equip-slot-sm:nth-child(5)
+div.equip-accessories div.equip-slot-sm:nth-child(5)
 {
 	left: 0dp;
 	top: 620dp;
@@ -758,7 +758,24 @@ div.equip-slot-sm.selected-yellow div.hex-fill
 
 div.equip-slot-sm:hover div.hex-fill
 {
-	image-color: #ff4444ff;
+	display: block;
+	image-color: #ffbf31ff;
+}
+
+/* Locked hex slots: different texture, no hover, no label */
+div.equip-slot-sm.locked div.hex-outline
+{
+	decorator: image(/Game/Texture/Inventory/T_Talisman_Locked.T_Talisman_Locked contain);
+}
+
+div.equip-slot-sm.locked:hover div.hex-fill
+{
+	display: none;
+}
+
+div.equip-slot-sm.locked span.equip-empty-sm
+{
+	display: none;
 }
 
 /* ---- context overrides: div.item inside equip slots ---- */
@@ -785,10 +802,10 @@ div.equip-slot-sm > div.item
 div.equip-slot-sm > div.item > div.item-icon
 {
 	position: absolute;
-	top: 22%;
-	left: 22%;
-	width: 56%;
-	height: 56%;
+	top: 26%;
+	left: 26%;
+	width: 48%;
+	height: 48%;
 	margin: 0;
 }
 
@@ -826,7 +843,6 @@ span.equip-empty
 	text-overflow: ellipsis;
 }
 
-
 span.equip-empty-sm
 {
 	display: block;
@@ -844,6 +860,21 @@ span.equip-empty-sm
 	text-overflow: ellipsis;
 }
 
+span.equip-locked-sm
+{
+	display: block;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 100%;
+	font-family: LatoLatin;
+	font-size: 10dp;
+	line-height: 160dp;
+	text-align: center;
+	color: #6a3030ff;
+	white-space: nowrap;
+}
+
 div.char-silhouette
 {
 	position: absolute;
@@ -853,3 +884,4 @@ div.char-silhouette
 	height: 777dp;
 	decorator: image(../../../../Texture/Inventory/T_Inventory_Character.png contain);
 }
+

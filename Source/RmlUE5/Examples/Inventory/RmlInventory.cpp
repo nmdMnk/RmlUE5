@@ -4,27 +4,31 @@ using namespace RmlInventoryUtils;
 
 void URmlInventory::CreateDataModel(Rml::Context* InContext)
 {
-	InventoryHandle = RegisterDataModel(InContext, Slots, EquipWeapons, Coins, Gems);
-	PopulateDemoInventory(Slots, Coins, Gems, InventoryHandle);
+	InventoryHandle = RegisterDataModel(
+		InContext, Slots, EquipWeapons, Coins, Gems, SlotsUsed, SlotsTotal);
+	PopulateDemoInventory(
+		Slots, EquipWeapons, Coins, Gems, SlotsUsed, SlotsTotal, InventoryHandle);
 }
 
 void URmlInventory::BindToDocument(Rml::ElementDocument* Doc)
 {
-	if (!Doc) return;
+	if (!Doc)
+		return;
 
-	// Root listener only once per context — catches clicks anywhere:
-	// items and empty grid space bubble up item → document → root;
-	// clicks on other documents (selectbar) hit the root directly.
+	// Root listener is bound once per context.
+	// Item and grid-space events bubble item -> document -> root.
+	// Clicks on other documents also hit the context root.
 	if (!bRootListenerBound)
 	{
 		if (Rml::Context* Ctx = Doc->GetContext())
 		{
 			Ctx->GetRootElement()->AddEventListener(Rml::EventId::Click, this);
+			Ctx->GetRootElement()->AddEventListener(Rml::EventId::Mouseover, this);
 			bRootListenerBound = true;
 		}
 	}
 
-	// Document element listeners — always rebind (elements are new after reload).
+	// Document element listeners are rebound after each reload.
 	if (Rml::Element* Grid = Doc->GetElementById("inv-grid"))
 	{
 		Grid->AddEventListener(Rml::EventId::Dragdrop, this);
@@ -33,22 +37,22 @@ void URmlInventory::BindToDocument(Rml::ElementDocument* Doc)
 
 	const char* EquipIds[] = {
 		"equip-main", "equip-secondary", "equip-range",
-		"equip-head", "equip-chest", "equip-hands", "equip-legs", "equip-feet"
+		"equip-acc-1", "equip-acc-2", "equip-acc-3", "equip-acc-4", "equip-acc-5"
 	};
+
 	for (const char* Id : EquipIds)
+	{
 		if (Rml::Element* El = Doc->GetElementById(Id))
 		{
 			El->AddEventListener(Rml::EventId::Dragdrop, this);
 			El->AddEventListener(Rml::EventId::Dragstart, this);
 		}
+	}
 }
 
 void URmlInventory::ClearSelection()
 {
-	for (auto& S : Slots)
-		S.Selected = 0;
-	for (int i = 0; i < GNumEquipSlots; ++i)
-		EquipWeapons[i].Selected = 0;
+	ClearAllSelections(Slots, EquipWeapons);
 	InventoryHandle.DirtyVariable("slots");
 	DirtyAllEquip(InventoryHandle);
 }
@@ -60,18 +64,23 @@ void URmlInventory::OnInit()
 
 void URmlInventory::ProcessEvent(Rml::Event& event)
 {
-	if (event.GetId() == Rml::EventId::Dragdrop)
+	switch (event.GetId())
 	{
+	case Rml::EventId::Dragdrop:
 		HandleDragDrop(event, Slots, EquipWeapons, EquipSourceIndex, InventoryHandle);
-		return;
-	}
-	if (event.GetId() == Rml::EventId::Dragstart)
-	{
+		break;
+	case Rml::EventId::Dragstart:
 		HandleDragStart(event, Slots, EquipWeapons, EquipSourceIndex, InventoryHandle);
-		return;
-	}
-	if (event.GetId() == Rml::EventId::Click)
+		break;
+	case Rml::EventId::Mouseover:
+		HandleHover(event, Slots, EquipWeapons, EquipSourceIndex, InventoryHandle);
+		break;
+	case Rml::EventId::Click:
 		HandleClick(event, Slots, EquipWeapons, EquipSourceIndex, InventoryHandle);
+		break;
+	default:
+		break;
+	}
 
 	URmlDocument::ProcessEvent(event);
 }

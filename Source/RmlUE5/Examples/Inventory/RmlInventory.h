@@ -31,10 +31,12 @@ protected:
 
 private:
 	Rml::Vector<FRmlSlotData> Slots;
-	FRmlSlotData EquipWeapons[RmlInventoryUtils::GNumEquipSlots];      // 0-2 weapons, 3-7 armor
+	FRmlSlotData EquipWeapons[RmlInventoryUtils::GNumEquipSlots];      // 0-2 weapons, 3-7 accessories
 	int EquipSourceIndex[RmlInventoryUtils::GNumEquipSlots] = {-1, -1, -1, -1, -1, -1, -1, -1};
 	int Coins = 0;
 	int Gems = 0;
+	int SlotsUsed = 0;
+	int SlotsTotal = 0;
 	Rml::DataModelHandle InventoryHandle;
 	bool bRootListenerBound = false;
 };
