@@ -616,6 +616,10 @@ void URmlInventory::ResetDragState()
 
 void URmlInventory::CreateDataModel(Rml::Context* InContext)
 {
+	// Reset flag so BindToDocument re-attaches root listeners on the new context.
+	// The old context (and its root element) was destroyed by ReleaseSlateResources.
+	bRootListenerBound = false;
+
 	InventoryHandle = RegisterDataModel(
 		InContext, Slots, EquipWeapons, Coins, Gems, SlotsUsed, SlotsTotal);
 	PopulateDemoInventory(
@@ -626,6 +630,9 @@ void URmlInventory::BindToDocument(Rml::ElementDocument* Doc)
 {
 	if (!Doc)
 		return;
+
+	BoundDocument = Doc;
+	BoundContext = Doc->GetContext();
 
 	// Root listener is bound once per context.
 	// Item and grid-space events bubble item -> document -> root.

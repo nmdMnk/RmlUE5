@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include "RmlShader.h"
 #include "RmlUi/Core/RenderInterface.h"
 
@@ -341,18 +342,18 @@ public:
 		CommandList.Add(FRmlDrawCommand::MakeSaveLayerAsMaskImage(Target, InScissorRect));
 	}
 
-	bool IsFree() const { return bIsFree; }
-	void MarkUsing() { bIsFree = false; }
-	void MarkFree()  { bIsFree = true; }
+	bool IsFree() const { return bIsFree.load(std::memory_order_acquire); }
+	void MarkUsing() { bIsFree.store(false, std::memory_order_release); }
+	void MarkFree()  { bIsFree.store(true, std::memory_order_release); }
 	void SetMSAASamples(int32 Samples) { MSAASamples = FMath::Max(Samples, 1); bUseMSAA = MSAASamples > 1; }
-	void SetHalfResBlur(bool b) { bHalfResBlur = b; }
+	void SetHalfResBlur(bool bEnabled) { bHalfResBlur = bEnabled; }
 
 	// Compiled shader storage (owned by RenderInterface, shared via pointer)
 	TMap<Rml::CompiledShaderHandle, TSharedPtr<FCompiledRmlShader>>* CompiledShaders = nullptr;
 
 private:
 	TArray<FRmlDrawCommand>	CommandList;
-	bool					bIsFree;
+	std::atomic<bool>		bIsFree;
 	bool					bUseMSAA = true;
 	bool					bHalfResBlur = false;
 	int32					MSAASamples = 4;
@@ -365,14 +366,22 @@ private:
 	FIntPoint		CachedRTSize;
 
 	// Per-frame shared geometry buffer. Accumulated from all mesh commands during the
-	// pre-pass in DrawRenderThread. One RHICreateVertexBuffer/IndexBuffer per frame
-	// replaces N×2 per-mesh allocations (main perf fix for benchmark).
+	// pre-pass in DrawRenderThread. Grow-only BUF_Volatile: no per-frame RHI object
+	// creation, no deferred-delete churn. Lock → fill → Unlock each frame.
 	FBufferRHIRef	FrameVB;
 	FBufferRHIRef	FrameIB;
+	int32			FrameVBCapacity = 0;	// max vertices before realloc
+	int32			FrameIBCapacity = 0;	// max indices before realloc
 
 	// Stencil state tracking
 	bool			bClipMaskActive = false;
 	int32			StencilRef = 0;
+
+	// Logged once per FRmlDrawer instance when DrawRenderThread first executes.
+	// Stored as a member so Live Coding can patch DrawRenderThread without
+	// triggering uninitialized-static crashes (function-scope statics are NOT
+	// updated by Live Coding — the patch module gets a new, uninitialized copy).
+	bool			bLoggedOnce = false;
 
 	void EnsureRenderResources(FRHICommandListImmediate& RHICmdList, const FIntPoint& RTSize, EPixelFormat RTFormat);
 

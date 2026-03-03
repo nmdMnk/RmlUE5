@@ -712,12 +712,19 @@ void FRmlDrawer::ExecuteSaveLayerAsTexture(FRHICommandListImmediate& RHICmdList,
 		ResolvedRT = TopRT;
 	}
 
-	// Create a texture matching the scissor region
+	// Reuse existing texture if dimensions match — avoids per-frame CreateTexture
+	// which floods the deferred-delete queue and causes periodic flush stalls.
 	const EPixelFormat Fmt = ResolvedRT->GetFormat();
-	FRHITextureCreateDesc Desc = FRHITextureCreateDesc::Create2D(TEXT("RmlUI_SavedLayer"), W, H, Fmt);
-	Desc.SetFlags(ETextureCreateFlags::RenderTargetable | ETextureCreateFlags::ShaderResource);
-	Desc.SetClearValue(FClearValueBinding::Transparent);
-	FTextureRHIRef SavedRT = RHICmdList.CreateTexture(Desc);
+	FTextureRHIRef SavedRT = Cmd.SavedTextureTarget->OverrideRHI;
+	if (!SavedRT.IsValid()
+		|| (int32)SavedRT->GetSizeX() != W
+		|| (int32)SavedRT->GetSizeY() != H)
+	{
+		FRHITextureCreateDesc Desc = FRHITextureCreateDesc::Create2D(TEXT("RmlUI_SavedLayer"), W, H, Fmt);
+		Desc.SetFlags(ETextureCreateFlags::RenderTargetable | ETextureCreateFlags::ShaderResource);
+		Desc.SetClearValue(FClearValueBinding::Transparent);
+		SavedRT = RHICmdList.CreateTexture(Desc);
+	}
 
 	// Shader blit: render the scissor region from resolved layer into the saved texture.
 	// Uses the Passthrough shader with UVOffset+UVScale to sample only the scissor region.
@@ -1059,7 +1066,7 @@ FTextureRHIRef* FRmlDrawer::ApplyFilters(FRHICommandListImmediate& RHICmdList, c
 				SetGraphicsPipelineState(RHICmdList, PSO, 0);
 				Vs->SetParameters(RHICmdList, FMatrix44f::Identity);
 				// Negate offset: shadow at (+30,+20) means we sample alpha from (-30,-20) in UV space.
-			DropShadowPs->SetParameters(RHICmdList, DropShadowPs.GetPixelShader(), *Src, Filter.Color, -Filter.Offset * TexelSize);
+				DropShadowPs->SetParameters(RHICmdList, DropShadowPs.GetPixelShader(), *Src, Filter.Color, -Filter.Offset * TexelSize);
 				DrawFullscreenQuad(RHICmdList);
 				RHICmdList.EndRenderPass();
 			}
@@ -1454,44 +1461,73 @@ void FRmlDrawer::RenderBlur(FRHICommandListImmediate& RHICmdList, float Sigma,
 
 void FRmlDrawer::BuildFrameGeometry(FRHICommandListImmediate& RHICmdList)
 {
-	// Accumulate all mesh vertices and indices from every command that has a mesh
-	// (DrawMesh, RenderToClipMask, DrawShader) into two flat arrays.
-	// We don't modify the indices — the GPU baseVertexIndex parameter offsets them.
+	// Pre-count pass: determine total vertex/index count without allocating.
+	int32 TotalVerts = 0;
+	int32 TotalIdx = 0;
+	for (const auto& Cmd : CommandList)
+	{
+		if (!Cmd.Mesh.IsValid()) continue;
+		const FRmlMesh* M = Cmd.Mesh.Get();
+		if (M->NumVertices == 0 || M->NumTriangles == 0) continue;
+		TotalVerts += M->Vertices.Num();
+		TotalIdx += M->Indices.Num();
+	}
 
-	TResourceArray<FRmlMesh::FVertexData> AllVerts;
-	TResourceArray<uint16>               AllIdx;
+	if (TotalVerts == 0)
+	{
+		FrameVB.SafeRelease();
+		FrameIB.SafeRelease();
+		FrameVBCapacity = 0;
+		FrameIBCapacity = 0;
+		return;
+	}
 
+	// Grow-only: recreate only when capacity is insufficient.
+	// Eliminates per-frame RHI object creation and deferred-delete queue churn.
+	if (TotalVerts > FrameVBCapacity || !FrameVB.IsValid())
+	{
+		const int32 Doubled = FMath::Max(FrameVBCapacity * 2, 256);
+		FrameVBCapacity = FMath::Max(TotalVerts, Doubled);
+		FRHIResourceCreateInfo Info(TEXT("RmlFrameVB"));
+		FrameVB = RHICreateVertexBuffer(FrameVBCapacity * sizeof(FRmlMesh::FVertexData), BUF_Volatile, Info);
+	}
+
+	if (TotalIdx > FrameIBCapacity || !FrameIB.IsValid())
+	{
+		const int32 Doubled = FMath::Max(FrameIBCapacity * 2, 256);
+		FrameIBCapacity = FMath::Max(TotalIdx, Doubled);
+		FRHIResourceCreateInfo Info(TEXT("RmlFrameIB"));
+		FrameIB = RHICreateIndexBuffer(sizeof(uint16), FrameIBCapacity * sizeof(uint16), BUF_Volatile, Info);
+	}
+
+	// Lock both buffers and fill directly — no intermediate CPU staging arrays.
+	// DrawIndexedPrimitive's baseVertexIndex offsets indices, so no index rewriting.
+	auto* VBDst = static_cast<FRmlMesh::FVertexData*>(
+		RHICmdList.LockBuffer(FrameVB, 0, TotalVerts * sizeof(FRmlMesh::FVertexData), RLM_WriteOnly));
+	auto* IBDst = static_cast<uint16*>(
+		RHICmdList.LockBuffer(FrameIB, 0, TotalIdx * sizeof(uint16), RLM_WriteOnly));
+
+	int32 VOffset = 0;
+	int32 IOffset = 0;
 	for (auto& Cmd : CommandList)
 	{
 		if (!Cmd.Mesh.IsValid()) continue;
 		FRmlMesh* M = Cmd.Mesh.Get();
 		if (M->NumVertices == 0 || M->NumTriangles == 0) continue;
 
-		// Record the slice offsets in the command (pre-pass writes, execute loop reads)
-		Cmd.BaseVertex = AllVerts.Num();
-		Cmd.StartIndex = AllIdx.Num();
+		Cmd.BaseVertex = VOffset;
+		Cmd.StartIndex = IOffset;
 
-		// Append — no index rewriting; DrawIndexedPrimitive's baseVertexIndex handles the offset
-		AllVerts.Append(M->Vertices.GetData(), M->Vertices.Num());
-		AllIdx.Append(M->Indices.GetData(), M->Indices.Num());
+		const int32 NV = M->Vertices.Num();
+		const int32 NI = M->Indices.Num();
+		FMemory::Memcpy(VBDst + VOffset, M->Vertices.GetData(), NV * sizeof(FRmlMesh::FVertexData));
+		FMemory::Memcpy(IBDst + IOffset, M->Indices.GetData(), NI * sizeof(uint16));
+		VOffset += NV;
+		IOffset += NI;
 	}
 
-	if (AllVerts.Num() == 0)
-	{
-		FrameVB.SafeRelease();
-		FrameIB.SafeRelease();
-		return;
-	}
-
-	// Create ONE VB + IB for the entire frame. BUF_Volatile uses D3D12's upload-heap
-	// ring allocator — effectively free allocation, zero copy of data from CPU to GPU.
-	const int32 VBSize = sizeof(FRmlMesh::FVertexData) * AllVerts.Num();
-	FRHIResourceCreateInfo VInfo(TEXT("RmlFrameVB"), &AllVerts);
-	FrameVB = RHICreateVertexBuffer(VBSize, BUF_Volatile, VInfo);
-
-	const int32 IBSize = sizeof(uint16) * AllIdx.Num();
-	FRHIResourceCreateInfo IInfo(TEXT("RmlFrameIB"), &AllIdx);
-	FrameIB = RHICreateIndexBuffer(sizeof(uint16), IBSize, BUF_Volatile, IInfo);
+	RHICmdList.UnlockBuffer(FrameVB);
+	RHICmdList.UnlockBuffer(FrameIB);
 }
 
 // DrawRenderThread — main entry point
@@ -1512,7 +1548,6 @@ void FRmlDrawer::DrawRenderThread(FRHICommandListImmediate& RHICmdList, const vo
 	const FIntPoint RTSize((*RT)->GetSizeX(), (*RT)->GetSizeY());
 	const EPixelFormat RTFormat = (*RT)->GetFormat();
 
-	static bool bLoggedOnce = false;
 	if (!bLoggedOnce)
 	{
 		auto FmtToStr = [](EPixelFormat F) -> const TCHAR* {
@@ -1533,7 +1568,7 @@ void FRmlDrawer::DrawRenderThread(FRHICommandListImmediate& RHICmdList, const vo
 	EnsureRenderResources(RHICmdList, RTSize, RTFormat);
 
 	// Pre-pass: accumulate all mesh geometry into one shared VB/IB for the frame.
-	// This replaces N×(RHICreateVertexBuffer + RHICreateIndexBuffer) with 1+1 per frame.
+	// Grow-only dynamic buffers: Lock → fill → Unlock. No per-frame RHI object churn.
 	BuildFrameGeometry(RHICmdList);
 
 	auto ShaderMap = GetGlobalShaderMap(ERHIFeatureLevel::SM5);
