@@ -27,12 +27,13 @@
 			<!-- ===== LEFT: inventory grid ===== -->
 			<div id="inv-grid-container">
 				<div id="inv-grid">
-					<div class="slot" data-for="slot, idx : slots" data-attr-data-index="idx">
+					<div class="slot" data-for="slot, idx : slots" data-attr-data-index="idx"
+					     data-class-drop-invalid="slot.drop_invalid == 1">
 						<div class="item-empty" data-if="slot.item_id == ''"></div>
 						<div class="item" data-if="slot.item_id != ''"
 						     data-class-equipped="slot.show_chip == 1"
 						     data-class-equipped-cyan="slot.show_chip == 2"
-						     data-class-selected-yellow="slot.selected == 1">
+						     data-class-selected-yellow="slot.selected == 1 && slot.drag_origin == 0">
 							<div class="corner-chip" data-if="slot.show_chip >= 1"></div>
 							<div class="item-icon" data-style-decorator="slot.icon"></div>
 							<span class="item-label" data-style-color="slot.rarity_color">{{ slot.name }}</span>
@@ -47,7 +48,7 @@
 			<!-- ===== LEFT: selected item details ===== -->
 			<div id="selected-item-panel">
 				<div class="selection-details" data-for="slot, idx : slots" data-if="slot.selected == 1">
-					<span class="selection-title" data-style-color="slot.rarity_color">{{ slot.name }}<span class="selection-equipped-tag" data-if="slot.show_chip >= 1">(Equipped)</span></span>
+					<span class="selection-title" data-style-color="slot.rarity_color"><span class="selection-name">{{ slot.name }}</span><span class="selection-equipped-tag" data-if="slot.show_chip >= 1">(Equipped)</span></span>
 					<div class="selection-body" data-rml="slot.details_rml"></div>
 				</div>
 			</div>
@@ -58,9 +59,22 @@
 			<div class="equip-weapons">
 				<div class="weapon-block">
 					<span class="equip-label">MAIN HAND</span>
-					<div class="equip-subslot"></div>
+					<div class="equip-subslot" id="equip-sub-main" data-equip="3"
+					     data-class-drop-invalid="equip_mod_main.drop_invalid == 1"
+					     data-class-drop-valid="equip_mod_main.drop_valid == 1"
+					     data-class-selected-yellow="equip_mod_main.selected == 1 && equip_mod_main.drag_origin == 0">
+						<div class="pulse-overlay"></div>
+						<div class="item" data-if="equip_mod_main.item_id != ''">
+							<div class="item-icon" data-style-decorator="equip_mod_main.icon"></div>
+							<span class="item-label" data-style-color="equip_mod_main.rarity_color">{{ equip_mod_main.name }}</span>
+							<span class="item-qty" data-if="equip_mod_main.qty > 1">{{ equip_mod_main.qty }}</span>
+						</div>
+					</div>
 					<div class="equip-slot slot-main" id="equip-main" data-equip="0"
-					     data-class-selected-yellow="equip_main.selected == 1">
+					     data-class-drop-invalid="equip_main.drop_invalid == 1"
+					     data-class-drop-valid="equip_main.drop_valid == 1"
+					     data-class-selected-yellow="equip_main.selected == 1 && equip_main.drag_origin == 0">
+						<div class="pulse-overlay"></div>
 						<span class="equip-empty" data-if="equip_main.item_id == ''">---</span>
 						<div class="item" data-if="equip_main.item_id != ''">
 							<div class="item-icon" data-style-decorator="equip_main.icon"></div>
@@ -72,9 +86,22 @@
 
 				<div class="weapon-block">
 					<span class="equip-label">OFF HAND</span>
-					<div class="equip-subslot"></div>
+					<div class="equip-subslot" id="equip-sub-secondary" data-equip="4"
+					     data-class-drop-invalid="equip_mod_secondary.drop_invalid == 1"
+					     data-class-drop-valid="equip_mod_secondary.drop_valid == 1"
+					     data-class-selected-yellow="equip_mod_secondary.selected == 1 && equip_mod_secondary.drag_origin == 0">
+						<div class="pulse-overlay"></div>
+						<div class="item" data-if="equip_mod_secondary.item_id != ''">
+							<div class="item-icon" data-style-decorator="equip_mod_secondary.icon"></div>
+							<span class="item-label" data-style-color="equip_mod_secondary.rarity_color">{{ equip_mod_secondary.name }}</span>
+							<span class="item-qty" data-if="equip_mod_secondary.qty > 1">{{ equip_mod_secondary.qty }}</span>
+						</div>
+					</div>
 					<div class="equip-slot slot-secondary" id="equip-secondary" data-equip="1"
-					     data-class-selected-yellow="equip_secondary.selected == 1">
+					     data-class-drop-invalid="equip_secondary.drop_invalid == 1"
+					     data-class-drop-valid="equip_secondary.drop_valid == 1"
+					     data-class-selected-yellow="equip_secondary.selected == 1 && equip_secondary.drag_origin == 0">
+						<div class="pulse-overlay"></div>
 						<span class="equip-empty" data-if="equip_secondary.item_id == ''">---</span>
 						<div class="item" data-if="equip_secondary.item_id != ''">
 							<div class="item-icon" data-style-decorator="equip_secondary.icon"></div>
@@ -86,9 +113,22 @@
 
 				<div class="weapon-block">
 					<span class="equip-label">RANGED</span>
-					<div class="equip-subslot subslot-range"></div>
+					<div class="equip-subslot subslot-range" id="equip-sub-range" data-equip="5"
+					     data-class-drop-invalid="equip_mod_range.drop_invalid == 1"
+					     data-class-drop-valid="equip_mod_range.drop_valid == 1"
+					     data-class-selected-yellow="equip_mod_range.selected == 1 && equip_mod_range.drag_origin == 0">
+						<div class="pulse-overlay"></div>
+						<div class="item" data-if="equip_mod_range.item_id != ''">
+							<div class="item-icon" data-style-decorator="equip_mod_range.icon"></div>
+							<span class="item-label" data-style-color="equip_mod_range.rarity_color">{{ equip_mod_range.name }}</span>
+							<span class="item-qty" data-if="equip_mod_range.qty > 1">{{ equip_mod_range.qty }}</span>
+						</div>
+					</div>
 					<div class="equip-slot slot-range" id="equip-range" data-equip="2"
-					     data-class-selected-yellow="equip_range.selected == 1">
+					     data-class-drop-invalid="equip_range.drop_invalid == 1"
+					     data-class-drop-valid="equip_range.drop_valid == 1"
+					     data-class-selected-yellow="equip_range.selected == 1 && equip_range.drag_origin == 0">
+						<div class="pulse-overlay"></div>
 						<span class="equip-empty" data-if="equip_range.item_id == ''">---</span>
 						<div class="item" data-if="equip_range.item_id != ''">
 							<div class="item-icon" data-style-decorator="equip_range.icon"></div>
@@ -102,11 +142,14 @@
 			<div class="char-silhouette"></div>
 
 			<div class="equip-accessories">
-				<div class="equip-slot-sm" id="equip-acc-1" data-equip="3"
+				<div class="equip-slot-sm" id="equip-acc-1" data-equip="6"
 				     data-class-equipped="equip_acc_1.item_id != ''"
-				     data-class-selected-yellow="equip_acc_1.selected == 1">
+				     data-class-drop-invalid="equip_acc_1.drop_invalid == 1"
+				     data-class-drop-valid="equip_acc_1.drop_valid == 1"
+				     data-class-selected-yellow="equip_acc_1.selected == 1 && equip_acc_1.drag_origin == 0">
 					<div class="hex-outline"></div>
 					<div class="hex-fill"></div>
+					<div class="hex-pulse"></div>
 					<div class="item" data-if="equip_acc_1.item_id != ''">
 						<div class="item-icon" data-style-decorator="equip_acc_1.icon"></div>
 						<span class="item-label" data-style-color="equip_acc_1.rarity_color">{{ equip_acc_1.name }}</span>
@@ -114,11 +157,14 @@
 					</div>
 					<span class="equip-empty-sm" data-if="equip_acc_1.item_id == ''">Accessory</span>
 				</div>
-				<div class="equip-slot-sm" id="equip-acc-2" data-equip="4"
+				<div class="equip-slot-sm" id="equip-acc-2" data-equip="7"
 				     data-class-equipped="equip_acc_2.item_id != ''"
-				     data-class-selected-yellow="equip_acc_2.selected == 1">
+				     data-class-drop-invalid="equip_acc_2.drop_invalid == 1"
+				     data-class-drop-valid="equip_acc_2.drop_valid == 1"
+				     data-class-selected-yellow="equip_acc_2.selected == 1 && equip_acc_2.drag_origin == 0">
 					<div class="hex-outline"></div>
 					<div class="hex-fill"></div>
+					<div class="hex-pulse"></div>
 					<div class="item" data-if="equip_acc_2.item_id != ''">
 						<div class="item-icon" data-style-decorator="equip_acc_2.icon"></div>
 						<span class="item-label" data-style-color="equip_acc_2.rarity_color">{{ equip_acc_2.name }}</span>
@@ -126,11 +172,14 @@
 					</div>
 					<span class="equip-empty-sm" data-if="equip_acc_2.item_id == ''">Accessory</span>
 				</div>
-				<div class="equip-slot-sm" id="equip-acc-3" data-equip="5"
+				<div class="equip-slot-sm" id="equip-acc-3" data-equip="8"
 				     data-class-equipped="equip_acc_3.item_id != ''"
-				     data-class-selected-yellow="equip_acc_3.selected == 1">
+				     data-class-drop-invalid="equip_acc_3.drop_invalid == 1"
+				     data-class-drop-valid="equip_acc_3.drop_valid == 1"
+				     data-class-selected-yellow="equip_acc_3.selected == 1 && equip_acc_3.drag_origin == 0">
 					<div class="hex-outline"></div>
 					<div class="hex-fill"></div>
+					<div class="hex-pulse"></div>
 					<div class="item" data-if="equip_acc_3.item_id != ''">
 						<div class="item-icon" data-style-decorator="equip_acc_3.icon"></div>
 						<span class="item-label" data-style-color="equip_acc_3.rarity_color">{{ equip_acc_3.name }}</span>
@@ -138,12 +187,15 @@
 					</div>
 					<span class="equip-empty-sm" data-if="equip_acc_3.item_id == ''">Accessory</span>
 				</div>
-				<div class="equip-slot-sm" id="equip-acc-4" data-equip="6"
+				<div class="equip-slot-sm" id="equip-acc-4" data-equip="9"
 				     data-class-equipped="equip_acc_4.item_id != ''"
-				     data-class-selected-yellow="equip_acc_4.selected == 1"
+				     data-class-drop-invalid="equip_acc_4.drop_invalid == 1"
+				     data-class-drop-valid="equip_acc_4.drop_valid == 1"
+				     data-class-selected-yellow="equip_acc_4.selected == 1 && equip_acc_4.drag_origin == 0"
 				     data-class-locked="equip_acc_4.locked == 1">
 					<div class="hex-outline"></div>
 					<div class="hex-fill"></div>
+					<div class="hex-pulse"></div>
 					<div class="item" data-if="equip_acc_4.item_id != ''">
 						<div class="item-icon" data-style-decorator="equip_acc_4.icon"></div>
 						<span class="item-label" data-style-color="equip_acc_4.rarity_color">{{ equip_acc_4.name }}</span>
@@ -152,12 +204,15 @@
 					<span class="equip-empty-sm" data-if="equip_acc_4.item_id == ''">Accessory</span>
 					<span class="equip-locked-sm" data-if="equip_acc_4.locked == 1">LOCKED</span>
 				</div>
-				<div class="equip-slot-sm" id="equip-acc-5" data-equip="7"
+				<div class="equip-slot-sm" id="equip-acc-5" data-equip="10"
 				     data-class-equipped="equip_acc_5.item_id != ''"
-				     data-class-selected-yellow="equip_acc_5.selected == 1"
+				     data-class-drop-invalid="equip_acc_5.drop_invalid == 1"
+				     data-class-drop-valid="equip_acc_5.drop_valid == 1"
+				     data-class-selected-yellow="equip_acc_5.selected == 1 && equip_acc_5.drag_origin == 0"
 				     data-class-locked="equip_acc_5.locked == 1">
 					<div class="hex-outline"></div>
 					<div class="hex-fill"></div>
+					<div class="hex-pulse"></div>
 					<div class="item" data-if="equip_acc_5.item_id != ''">
 						<div class="item-icon" data-style-decorator="equip_acc_5.icon"></div>
 						<span class="item-label" data-style-color="equip_acc_5.rarity_color">{{ equip_acc_5.name }}</span>

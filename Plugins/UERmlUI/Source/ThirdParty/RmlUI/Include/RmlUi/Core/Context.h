@@ -119,6 +119,8 @@ public:
 	/// Returns the root element that holds all the documents
 	/// @return The root element.
 	Element* GetRootElement();
+	/// Returns the current drag clone element, or nullptr if no clone drag is active.
+	Element* GetDragClone() const { return drag_clone; }
 
 	/// Returns the youngest descendent of the given element which is under the given point in screen coordinates.
 	/// @param[in] point The point to test.

@@ -19,7 +19,6 @@
 #endif
 
 ARmlUE5GameModeBase::ARmlUE5GameModeBase()
-	: MainDemo(nullptr)
 {
 	PrimaryActorTick.bCanEverTick = true;
 }
@@ -46,8 +45,9 @@ void ARmlUE5GameModeBase::BeginPlay()
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("LatoLatin-Bold.ttf"))));
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("LatoLatin-Italic.ttf"))));
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("LatoLatin-BoldItalic.ttf"))));
+	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("Fonts/CaesarDressing-Regular.ttf"))));
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("NotoEmoji-Regular.ttf"))), true);
-	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("STKAITI.TTF"))), true);
+	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("Fonts/NotoSansSC-Regular.ttf"))), true);
 	
 	// create context with initial viewport dimensions so percentage-based
 	// layouts (e.g. width: 80%) resolve correctly at document load time.
@@ -76,7 +76,7 @@ void ARmlUE5GameModeBase::BeginPlay()
 	}
 
 	// load demos
-	_LoadDemos(BasePath);
+	LoadDemos(BasePath);
 
 	// Pre-warm font effect layers from saved warmup document list.
 	// CurrentDrawer is null here, so Context::Render() fires texture-generation
@@ -182,7 +182,7 @@ void ARmlUE5GameModeBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 #endif
 }
 
-void ARmlUE5GameModeBase::_LoadDemos(const FString& InBasePath)
+void ARmlUE5GameModeBase::LoadDemos(const FString& InBasePath)
 {
 	// setup notify object
 	DemoSelector->SetNotifyObject(TEXT("Controller"), this);
@@ -211,9 +211,9 @@ void ARmlUE5GameModeBase::_LoadDemos(const FString& InBasePath)
 	Sprites = NewObject<URmlDocument>(this);
 	Sprites->Init(Context, InBasePath + TEXT("sprites.rml"));
 	Sprites->SetNotifyObject(TEXT("Controller"), this);
-	_SetDocumentTitle(Sprites);
+	SetDocumentTitle(Sprites);
 
-	// effects (data model must exist before LoadDocument)
+	// Data model must exist before LoadDocument.
 	Effects = NewObject<URmlEffects>(this);
 	Effects->CreateDataModel(Context);
 	Effects->Init(Context, InBasePath + TEXT("effects.rml"));
@@ -224,38 +224,38 @@ void ARmlUE5GameModeBase::_LoadDemos(const FString& InBasePath)
 	Drag->Init(Context, InBasePath + TEXT("drag/inventory.rml"));
 	Drag->SetNotifyObject(TEXT("Controller"), this);
 
-	// data binding (data models must exist before LoadDocument)
+	// Data model must exist before LoadDocument.
 	DataBinding = NewObject<URmlDataBinding>(this);
 	DataBinding->CreateDataModels(Context);
 	DataBinding->Init(Context, InBasePath + TEXT("data_binding.rml"));
 	DataBinding->SetNotifyObject(TEXT("Controller"), this);
 
-	// inventory (data model must exist before LoadDocument)
+	// Data model must exist before LoadDocument.
 	Inventory = NewObject<URmlInventory>(this);
 	Inventory->CreateDataModel(Context);
 	Inventory->Init(Context, InBasePath + TEXT("Inventory/inventory.rml"));
 	Inventory->SetNotifyObject(TEXT("Controller"), this);
-	_SetDocumentTitle(Inventory);
+	SetDocumentTitle(Inventory);
 }
 
-void ARmlUE5GameModeBase::OpenDemo() { _ChangeShowItem(MainDemo); }
-void ARmlUE5GameModeBase::OpenBenchMark() { _ChangeShowItem(BenchMark); }
-void ARmlUE5GameModeBase::OpenAnimation() { _ChangeShowItem(Animation); }
-void ARmlUE5GameModeBase::OpenTransform() { _ChangeShowItem(Transform); }
-void ARmlUE5GameModeBase::OpenSprites() { _ChangeShowItem(Sprites); }
-void ARmlUE5GameModeBase::OpenEffects() { _ChangeShowItem(Effects); }
-void ARmlUE5GameModeBase::OpenDrag() { _ChangeShowItem(Drag); }
-void ARmlUE5GameModeBase::OpenDataBinding() { _ChangeShowItem(DataBinding); }
-void ARmlUE5GameModeBase::OpenMockupInventory() { _ChangeShowItem(Inventory); }
+void ARmlUE5GameModeBase::OpenDemo() { ChangeShowItem(MainDemo); }
+void ARmlUE5GameModeBase::OpenBenchMark() { ChangeShowItem(BenchMark); }
+void ARmlUE5GameModeBase::OpenAnimation() { ChangeShowItem(Animation); }
+void ARmlUE5GameModeBase::OpenTransform() { ChangeShowItem(Transform); }
+void ARmlUE5GameModeBase::OpenSprites() { ChangeShowItem(Sprites); }
+void ARmlUE5GameModeBase::OpenEffects() { ChangeShowItem(Effects); }
+void ARmlUE5GameModeBase::OpenDrag() { ChangeShowItem(Drag); }
+void ARmlUE5GameModeBase::OpenDataBinding() { ChangeShowItem(DataBinding); }
+void ARmlUE5GameModeBase::OpenMockupInventory() { ChangeShowItem(Inventory); }
 
 void ARmlUE5GameModeBase::CloseDemo()
 {
 	if (!CurrentElement) return;
 
-	_ChangeShowItem(nullptr);
+	ChangeShowItem(nullptr);
 }
 
-void ARmlUE5GameModeBase::_SetDocumentTitle(const URmlDocument* InDocument)
+void ARmlUE5GameModeBase::SetDocumentTitle(const URmlDocument* InDocument)
 {
 	Rml::ElementDocument* Doc = InDocument->GetDocument();
 	if (!Doc) return;
@@ -264,7 +264,7 @@ void ARmlUE5GameModeBase::_SetDocumentTitle(const URmlDocument* InDocument)
 		TitleEl->SetInnerRML(Doc->GetTitle());
 }
 
-void ARmlUE5GameModeBase::_ChangeShowItem(URmlDocument* InDocument)
+void ARmlUE5GameModeBase::ChangeShowItem(URmlDocument* InDocument)
 {
 	// Stop and clear benchmark if it was active.
 	if (CurrentElement == BenchMark)

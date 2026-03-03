@@ -35,7 +35,10 @@ struct FRmlSlotData
 	Rml::String RarityColor = "transparent"; // hex for data-style-color
 	int Qty = 0;                           // shown if > 1
 	int Selected = 0;                      // 0=none, 1=selected
+	int DragOrigin = 0;                    // 1=source item while dragging (details-only, no yellow highlight)
 	int ShowChip = 0;                      // 1 = show corner chip
+	int DropInvalid = 0;                   // 1 = current drag cannot be dropped here (temporary red feedback)
+	int DropValid = 0;                     // 1 = current drag CAN be dropped here (green pulse on compatible equip slots)
 	int Locked = 0;                        // 1 = slot locked (cannot equip or hover)
 	Rml::String DetailsRml;                // pre-built details body HTML for data-rml
 };
@@ -47,88 +50,15 @@ struct FRmlSlotData
 namespace RmlInventoryUtils
 {
 
-// Static item database — matches the 9 items from the original mockup.
-inline const FRmlItemDef GItemDatabase[] =
-{
-	{
-		"void_sword", "Void Sword",
-		"image(/Game/Texture/high_scores_alien_1.high_scores_alien_1)",
-		"#a335eeff", "Epic", "Weapon",
-		"A blade forged in the void between stars",
-		{"ATK  +45", "CRIT +15%"},
-		false, 1
-	},
-	{
-		"iron_helm", "Iron Helm",
-		"image(/Game/Texture/alien_small.alien_small)",
-		"#888888ff", "Common", "Material",
-		"A battered helm, useful only for scrap metal",
-		{"Crafting material"},
-		true, 99
-	},
-	{
-		"arcane_orb", "Arcane Orb",
-		"image(/Game/Texture/high_scores_alien_1.high_scores_alien_1)",
-		"#ff8000ff", "Legendary", "Accessory",
-		"Pulses with inexhaustible cosmic energy",
-		{"MANA  +80", "SPELL +35%"},
-		false, 1
-	},
-	{
-		"ancient_shield", "Ancient Shield",
-		"image(/Game/Texture/high_scores_defender.high_scores_defender)",
-		"#0070ddff", "Rare", "Off Hand",
-		"Belonged to a fallen guardian",
-		{"DEF   +28", "BLOCK +20%"},
-		false, 1
-	},
-	{
-		"red_potion", "Red Potion",
-		"image(/Game/Texture/high_scores_alien_2.high_scores_alien_2)",
-		"#888888ff", "Common", "Consumable",
-		"Ruby liquid that restores the body",
-		{"HP +150  (use)"},
-		true, 99
-	},
-	{
-		"dark_crystal", "Dark Crystal",
-		"image(/Game/Texture/high_scores_alien_3.high_scores_alien_3)",
-		"#a335eeff", "Epic", "Accessory",
-		"Fragment of a dead star",
-		{"ALL  +15", "DARK +25%"},
-		false, 1
-	},
-	{
-		"wood_bow", "Wood Bow-Ie",
-		"image(/Game/Texture/present.present)",
-		"#1eff00ff", "Uncommon", "Ranged",
-		"A simple but reliable hunting bow",
-		{"ATK  +18", "RNG  +12"},
-		false, 1
-	},
-	{
-		"ancient_amulet", "Ancient Amulet",
-		"image(/Game/Texture/alien_small.alien_small)",
-		"#1eff00ff", "Uncommon", "Accessory",
-		"Incomprehensible hieroglyphs carved in bronze",
-		{"INT  +22", "MP   +40"},
-		false, 1
-	},
-	{
-		"crimson_cloth", "Crimson Cloth",
-		"image(/Game/Texture/high_scores_defender.high_scores_defender)",
-		"#888888ff", "Common", "Material",
-		"A finely woven piece of crimson fabric",
-		{"Crafting material"},
-		true, 99
-	},
-};
+// Item database — returned by value so Live Coding can patch the function body
+// (static data is NOT patched by Live Coding, only function code).
+Rml::Vector<FRmlItemDef> GetItemDatabase();
 
-inline const FRmlItemDef* FindItem(const Rml::String& ItemId)
+inline const FRmlItemDef* FindItem(const Rml::Vector<FRmlItemDef>& DB, const Rml::String& ItemId)
 {
-	for (const FRmlItemDef& Def : GItemDatabase)
-		if (Def.Id == ItemId)
-			return &Def;
+	for (const FRmlItemDef& Item : DB)
+		if (Item.Id == ItemId)
+			return &Item;
 	return nullptr;
 }
 
@@ -182,7 +112,14 @@ inline int GetElementAttr(const Rml::Element* El, const char* AttrName)
 inline int GetSlotIndex(const Rml::Element* El)  { return GetElementAttr(El, "data-index"); }
 inline int GetEquipIndex(const Rml::Element* El) { return GetElementAttr(El, "data-equip"); }
 
-inline constexpr int GNumEquipSlots = 8;  // 0-2 weapons, 3-7 accessories
+inline constexpr int GEquipMainSlot = 0;
+inline constexpr int GEquipSecondarySlot = 1;
+inline constexpr int GEquipRangedSlot = 2;
+inline constexpr int GEquipMainModSlot = 3;
+inline constexpr int GEquipSecondaryModSlot = 4;
+inline constexpr int GEquipRangedModSlot = 5;
+inline constexpr int GEquipAccessoryStartSlot = 6;
+inline constexpr int GNumEquipSlots = 11;  // 0-2 weapons, 3-5 weapon mods, 6-10 accessories
 
 /** Resolve the hovered/clicked/dragged element to its slot data pointer.
     Returns nullptr when the element doesn't map to any known slot. */
@@ -209,17 +146,28 @@ inline bool CanEquip(int EquipSlot, const Rml::String& TypeName)
 {
 	switch (EquipSlot)
 	{
-	case 0: return TypeName == "Weapon";                                  // Main
-	case 1: return TypeName == "Weapon" || TypeName == "Off Hand";        // Secondary
-	case 2: return TypeName == "Ranged";                                  // Range
-	default: return EquipSlot >= 3 && TypeName == "Accessory";            // ACC 1-5
+	case GEquipMainSlot:         return TypeName == "Weapon";
+	case GEquipSecondarySlot:    return TypeName == "Weapon" || TypeName == "Off Hand";
+	case GEquipRangedSlot:       return TypeName == "Ranged";
+	case GEquipMainModSlot:      // fallthrough
+	case GEquipSecondaryModSlot: return TypeName == "Weapon Mod";
+	case GEquipRangedModSlot:    return TypeName == "Ranged Weapon Mod";
+	default:                     return EquipSlot >= GEquipAccessoryStartSlot && TypeName == "Accessory";
 	}
 }
 
-inline constexpr const char* GEquipDirtyNames[] = {
+inline constexpr const char* GEquipBindingNames[] = {
 	"equip_main", "equip_secondary", "equip_range",
+	"equip_mod_main", "equip_mod_secondary", "equip_mod_range",
 	"equip_acc_1", "equip_acc_2", "equip_acc_3", "equip_acc_4", "equip_acc_5"
 };
+static_assert((sizeof(GEquipBindingNames) / sizeof(GEquipBindingNames[0])) == GNumEquipSlots,
+	"GEquipBindingNames size must match GNumEquipSlots");
+
+inline int GetChipColorForEquipSlot(int EquipSlot)
+{
+	return EquipSlot >= GEquipAccessoryStartSlot ? 2 : 1;
+}
 
 /** Register the "inventory" data model and bind to the provided members. */
 inline Rml::DataModelHandle RegisterDataModel(
@@ -242,7 +190,10 @@ inline Rml::DataModelHandle RegisterDataModel(
 			H.RegisterMember("rarity_color",  &FRmlSlotData::RarityColor);
 			H.RegisterMember("qty",           &FRmlSlotData::Qty);
 			H.RegisterMember("selected",      &FRmlSlotData::Selected);
+			H.RegisterMember("drag_origin",   &FRmlSlotData::DragOrigin);
 			H.RegisterMember("show_chip",     &FRmlSlotData::ShowChip);
+			H.RegisterMember("drop_invalid",  &FRmlSlotData::DropInvalid);
+			H.RegisterMember("drop_valid",    &FRmlSlotData::DropValid);
 			H.RegisterMember("locked",        &FRmlSlotData::Locked);
 			H.RegisterMember("details_rml",   &FRmlSlotData::DetailsRml);
 		}
@@ -250,14 +201,8 @@ inline Rml::DataModelHandle RegisterDataModel(
 		C.RegisterArray<Rml::Vector<FRmlSlotData>>();
 
 		C.Bind("slots", &Slots);
-		C.Bind("equip_main",      &EquipWeapons[0]);
-		C.Bind("equip_secondary", &EquipWeapons[1]);
-		C.Bind("equip_range",     &EquipWeapons[2]);
-		C.Bind("equip_acc_1",     &EquipWeapons[3]);
-		C.Bind("equip_acc_2",     &EquipWeapons[4]);
-		C.Bind("equip_acc_3",     &EquipWeapons[5]);
-		C.Bind("equip_acc_4",     &EquipWeapons[6]);
-		C.Bind("equip_acc_5",     &EquipWeapons[7]);
+		for (int i = 0; i < GNumEquipSlots; ++i)
+			C.Bind(GEquipBindingNames[i], &EquipWeapons[i]);
 		C.Bind("coins", &Coins);
 		C.Bind("gems",  &Gems);
 		C.Bind("slots_used",  &SlotsUsed);
@@ -268,7 +213,7 @@ inline Rml::DataModelHandle RegisterDataModel(
 	return Handle;
 }
 
-/** Populate 50 demo slots (9 items + 41 empty) and set currency. */
+/** Populate 50 demo slots (11 items + 39 empty) and set currency. */
 inline void PopulateDemoInventory(
 	Rml::Vector<FRmlSlotData>& Slots,
 	FRmlSlotData* EquipWeapons,
@@ -280,20 +225,23 @@ inline void PopulateDemoInventory(
 {
 	Slots.resize(50);
 
-	PopulateSlot(Slots[0], GItemDatabase[0], 1);           // Void Sword
-	PopulateSlot(Slots[1], GItemDatabase[1], 1);           // Iron Helm
-	PopulateSlot(Slots[2], GItemDatabase[2], 1);           // Arcane Orb
-	PopulateSlot(Slots[3], GItemDatabase[3], 1);           // Ancient Shield
-	PopulateSlot(Slots[4], GItemDatabase[4], 13);          // Red Potion x13
-	PopulateSlot(Slots[5], GItemDatabase[5], 1);           // Dark Crystal
-	PopulateSlot(Slots[6], GItemDatabase[6], 1);           // Wood Bow-Ie
-	PopulateSlot(Slots[7], GItemDatabase[7], 1);           // Ancient Amulet
-	PopulateSlot(Slots[8], GItemDatabase[8], 24);          // Crimson Cloth x24
-	// Slots[9..49] remain default (empty)
+	Rml::Vector<FRmlItemDef> DB = GetItemDatabase();
+	PopulateSlot(Slots[0], DB[0], 1);           // Void Sword
+	PopulateSlot(Slots[1], DB[1], 1);           // Iron Helm
+	PopulateSlot(Slots[2], DB[2], 1);           // Arcane Orb
+	PopulateSlot(Slots[3], DB[3], 1);           // Ancient Shield
+	PopulateSlot(Slots[4], DB[4], 13);          // Red Potion x13
+	PopulateSlot(Slots[5], DB[5], 1);           // Dark Crystal
+	PopulateSlot(Slots[6], DB[6], 1);           // Wood Bow-Ie
+	PopulateSlot(Slots[7], DB[7], 1);           // Ancient Amulet
+	PopulateSlot(Slots[8], DB[8], 1);           // Void Core Mod
+	PopulateSlot(Slots[9], DB[9], 1);           // Falcon Scope Mod
+	PopulateSlot(Slots[10], DB[10], 24);        // Crimson Cloth x24
+	// Slots[11..49] remain default (empty)
 
-	// Lock ACC 4-5 (equip indices 6-7)
-	EquipWeapons[6].Locked = 1;
-	EquipWeapons[7].Locked = 1;
+	// Lock ACC 4-5 (equip indices 9-10)
+	EquipWeapons[9].Locked = 1;
+	EquipWeapons[10].Locked = 1;
 
 	Coins = 1526;
 	Gems  = 26;
@@ -314,17 +262,44 @@ inline void PopulateDemoInventory(
 inline void ClearAllSelections(Rml::Vector<FRmlSlotData>& Slots, FRmlSlotData* EquipWeapons)
 {
 	for (auto& S : Slots)
+	{
 		S.Selected = 0;
+		S.DragOrigin = 0;
+	}
 	for (int i = 0; i < GNumEquipSlots; ++i)
+	{
 		EquipWeapons[i].Selected = 0;
+		EquipWeapons[i].DragOrigin = 0;
+	}
+}
+
+inline void MarkSelectedAsDragOrigin(Rml::Vector<FRmlSlotData>& Slots, FRmlSlotData* EquipWeapons)
+{
+	for (auto& S : Slots)
+	{
+		if (S.Selected == 1)
+			S.DragOrigin = 1;
+	}
+	for (int i = 0; i < GNumEquipSlots; ++i)
+	{
+		if (EquipWeapons[i].Selected == 1)
+			EquipWeapons[i].DragOrigin = 1;
+	}
 }
 
 /** Dirty all equip variables that changed. */
 inline void DirtyAllEquip(Rml::DataModelHandle& Handle)
 {
 	for (int i = 0; i < GNumEquipSlots; ++i)
-		Handle.DirtyVariable(GEquipDirtyNames[i]);
+		Handle.DirtyVariable(GEquipBindingNames[i]);
 }
+
+/** Refresh display fields (Icon, Name, RarityColor, DetailsRml) from GItemDatabase
+    for all non-empty slots. Defined in RmlInventoryData.cpp for Live Coding support. */
+void RefreshSlotsFromDatabase(
+	Rml::Vector<FRmlSlotData>& Slots,
+	FRmlSlotData* EquipWeapons,
+	Rml::DataModelHandle& Handle);
 
 /** Grid → Grid: swap slots and patch any equip-source refs pointing at either index. */
 inline void HandleDragDrop_GridToGrid(
@@ -363,7 +338,8 @@ inline void HandleDragDrop_GridToEquip(
 	if (EquipWeapons[DstEquip].Locked) return;
 
 	// Type validation
-	const FRmlItemDef* Def = FindItem(Slots[SrcGrid].ItemId);
+	Rml::Vector<FRmlItemDef> DB = GetItemDatabase();
+	const FRmlItemDef* Def = FindItem(DB, Slots[SrcGrid].ItemId);
 	if (!Def || !CanEquip(DstEquip, Def->TypeName)) return;
 
 	// If this grid item is already equipped elsewhere, clear that equip slot
@@ -373,7 +349,7 @@ inline void HandleDragDrop_GridToEquip(
 		{
 			ClearSlot(EquipWeapons[i]);
 			EquipSourceIndex[i] = -1;
-			Handle.DirtyVariable(GEquipDirtyNames[i]);
+			Handle.DirtyVariable(GEquipBindingNames[i]);
 			break;
 		}
 	}
@@ -386,10 +362,10 @@ inline void HandleDragDrop_GridToEquip(
 	EquipWeapons[DstEquip] = Slots[SrcGrid];
 	EquipWeapons[DstEquip].ShowChip = 0;
 	EquipSourceIndex[DstEquip] = SrcGrid;
-	Slots[SrcGrid].ShowChip = (DstEquip >= 3) ? 2 : 1;
+	Slots[SrcGrid].ShowChip = GetChipColorForEquipSlot(DstEquip);
 
 	Handle.DirtyVariable("slots");
-	Handle.DirtyVariable(GEquipDirtyNames[DstEquip]);
+	Handle.DirtyVariable(GEquipBindingNames[DstEquip]);
 }
 
 /** Equip → Grid: unequip into an empty/ghost slot, or swap with an occupied slot. */
@@ -419,6 +395,12 @@ inline void HandleDragDrop_EquipToGrid(
 	}
 	else
 	{
+		Rml::Vector<FRmlItemDef> DB = GetItemDatabase();
+		// Occupied target is allowed only if displaced item can stay equipped in SrcEquip.
+		const FRmlItemDef* DstDef = FindItem(DB, Slots[DstGrid].ItemId);
+		if (!DstDef || !CanEquip(SrcEquip, DstDef->TypeName))
+			return;
+
 		// Occupied target: swap grid slots, re-equip the displaced item
 		std::swap(Slots[OldIdx], Slots[DstGrid]);
 
@@ -436,7 +418,7 @@ inline void HandleDragDrop_EquipToGrid(
 		EquipWeapons[SrcEquip] = Slots[OldIdx];
 		EquipWeapons[SrcEquip].ShowChip = 0;
 		EquipSourceIndex[SrcEquip] = OldIdx;
-		Slots[OldIdx].ShowChip = (SrcEquip >= 3) ? 2 : 1;
+		Slots[OldIdx].ShowChip = GetChipColorForEquipSlot(SrcEquip);
 		Slots[DstGrid].ShowChip = 0;
 	}
 
@@ -457,14 +439,15 @@ inline void HandleDragDrop_EquipToEquip(
 	const int SlotCount = static_cast<int>(Slots.size());
 
 	// Validate both items fit in their new slots
+	Rml::Vector<FRmlItemDef> DB = GetItemDatabase();
 	if (!EquipWeapons[SrcEquip].ItemId.empty())
 	{
-		const FRmlItemDef* SrcDef = FindItem(EquipWeapons[SrcEquip].ItemId);
+		const FRmlItemDef* SrcDef = FindItem(DB, EquipWeapons[SrcEquip].ItemId);
 		if (!SrcDef || !CanEquip(DstEquip, SrcDef->TypeName)) return;
 	}
 	if (!EquipWeapons[DstEquip].ItemId.empty())
 	{
-		const FRmlItemDef* DstDef = FindItem(EquipWeapons[DstEquip].ItemId);
+		const FRmlItemDef* DstDef = FindItem(DB, EquipWeapons[DstEquip].ItemId);
 		if (!DstDef || !CanEquip(SrcEquip, DstDef->TypeName)) return;
 	}
 
@@ -476,11 +459,11 @@ inline void HandleDragDrop_EquipToEquip(
 	{
 		const int Src = EquipSourceIndex[i];
 		if (Src >= 0 && Src < SlotCount)
-			Slots[Src].ShowChip = (i >= 3) ? 2 : 1;
+			Slots[Src].ShowChip = GetChipColorForEquipSlot(i);
 	}
 	Handle.DirtyVariable("slots");
-	Handle.DirtyVariable(GEquipDirtyNames[SrcEquip]);
-	Handle.DirtyVariable(GEquipDirtyNames[DstEquip]);
+	Handle.DirtyVariable(GEquipBindingNames[SrcEquip]);
+	Handle.DirtyVariable(GEquipBindingNames[DstEquip]);
 }
 
 /**
@@ -559,6 +542,7 @@ inline void HandleDragStart(
 	ClearAllSelections(Slots, EquipWeapons);
 	Dragged->Selected = 1;
 	SyncSelection(GridIdx, EquipIdx, Slots, EquipWeapons, EquipSourceIndex);
+	MarkSelectedAsDragOrigin(Slots, EquipWeapons);
 
 	Handle.DirtyVariable("slots");
 	DirtyAllEquip(Handle);

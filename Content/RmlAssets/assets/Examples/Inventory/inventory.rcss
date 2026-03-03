@@ -1,19 +1,3 @@
-@spritesheet scroll-track-sheet
-{
-	src: /Game/Texture/Inventory/scroll_track.scroll_track;
-	resolution: 1x;
-	scroll-track-outer: 0px 0px 16px 256px;
-	scroll-track-inner: 2px 2px 12px 252px;
-}
-
-@spritesheet scroll-thumb-sheet
-{
-	src: /Game/Texture/Inventory/scroll_thumb.scroll_thumb;
-	resolution: 1x;
-	scroll-thumb-outer: 0px 0px 16px 86px;
-	scroll-thumb-inner: 2px 2px 12px 82px;
-}
-
 body.window
 {
 	position: absolute;
@@ -95,16 +79,6 @@ div.topbar
 	background-color: #0a151eff;
 }
 
-div.topbar-inv-header
-{
-	display: block;
-	position: absolute;
-	left: 4.0%;
-	top: 53%;
-	width: 36%;
-	z-index: 30;
-}
-
 div.currency-block
 {
 	display: block;
@@ -147,23 +121,6 @@ span.currency-value
 span.currency-value.gem
 {
 	color: #49f6f8ff;
-}
-
-span.runes-icon,
-span.runes-value
-{
-	display: none;
-}
-
-span.title-equip
-{
-	display: block;
-	float: right;
-	font-size: 19dp;
-	font-weight: bold;
-	color: #c8a84eff;
-	font-effect: shadow(1dp 1dp #000000cc);
-	line-height: 1.1;
 }
 
 div.clearfix
@@ -286,6 +243,12 @@ div#selected-item-panel span.selection-title
 	margin-bottom: 8dp;
 	overflow: hidden;
 	white-space: nowrap;
+}
+
+div#selected-item-panel span.selection-name
+{
+	font-family: "Caesar Dressing";
+	text-transform: uppercase;
 }
 
 div#selected-item-panel span.selection-equipped-tag
@@ -515,6 +478,20 @@ div.item:hover
 	z-index: 80;
 }
 
+/* During drag-over, invalid drop targets must be red (override hover/select). */
+div.slot.drop-invalid div.item,
+div.slot.drop-invalid div.item:hover,
+div.slot.drop-invalid div.item-empty,
+div.slot.drop-invalid div.item-empty:hover
+{
+	border: 3dp #ff3b30ff;
+}
+
+div.slot.drop-invalid div.corner-chip
+{
+	background-color: #ff3b30ff;
+}
+
 div.item-empty
 {
 	display: block;
@@ -661,11 +638,24 @@ div.equip-subslot
 	background-color: transparent;
 	border: 3dp #9aa4b2ff;
 	z-index: 10;
+	overflow: hidden;
 }
 
 div.equip-subslot:hover
 {
 	border-color: #ffbf31ff;
+}
+
+div.equip-subslot.selected-yellow,
+div.equip-subslot.selected-yellow:hover
+{
+	border-color: #ffbf31ff;
+}
+
+div.equip-subslot.drop-invalid,
+div.equip-subslot.drop-invalid:hover
+{
+	border-color: #ff3b30ff;
 }
 
 div.equip-slot.slot-main,
@@ -679,6 +669,13 @@ div.equip-slot.selected-yellow,
 div.equip-slot:hover
 {
 	border-color: #ffbf31ff;
+}
+
+div.equip-slot.drop-invalid,
+div.equip-slot.drop-invalid:hover,
+div.equip-slot.drop-invalid.selected-yellow
+{
+	border-color: #ff3b30ff;
 }
 
 div.equip-slot-sm
@@ -778,6 +775,13 @@ div.equip-slot-sm.locked span.equip-empty-sm
 	display: none;
 }
 
+div.equip-slot-sm.drop-invalid div.hex-fill,
+div.equip-slot-sm.drop-invalid:hover div.hex-fill
+{
+	display: block;
+	image-color: #ff3b30ff;
+}
+
 /* ---- context overrides: div.item inside equip slots ---- */
 
 /* Weapon equip slots: neutralize item chrome (border, bg) */
@@ -788,8 +792,9 @@ div.equip-slot > div.item
 	z-index: auto;
 }
 
-/* Hexagon equip slots: neutralize item chrome, clip to hex */
-div.equip-slot-sm > div.item
+/* Hex + subslot equip slots: neutralize item chrome, icon-only display */
+div.equip-slot-sm > div.item,
+div.equip-subslot > div.item
 {
 	border: 0;
 	background-color: transparent;
@@ -798,8 +803,8 @@ div.equip-slot-sm > div.item
 	overflow: hidden;
 }
 
-/* Reposition icon inside hexagon (centered, absolute) */
-div.equip-slot-sm > div.item > div.item-icon
+div.equip-slot-sm > div.item > div.item-icon,
+div.equip-subslot > div.item > div.item-icon
 {
 	position: absolute;
 	top: 26%;
@@ -809,21 +814,12 @@ div.equip-slot-sm > div.item > div.item-icon
 	margin: 0;
 }
 
-/* Hide label/qty inside hexagons (too small for text) */
 div.equip-slot-sm > div.item > span.item-label,
-div.equip-slot-sm > div.item > span.item-qty
+div.equip-slot-sm > div.item > span.item-qty,
+div.equip-subslot > div.item > span.item-label,
+div.equip-subslot > div.item > span.item-qty
 {
 	display: none;
-}
-
-span.equip-name
-{
-	display: block;
-	font-family: LatoLatin;
-	font-size: 10dp;
-	text-align: center;
-	color: #a09882ff;
-	margin-top: 2%;
 }
 
 span.equip-empty
@@ -883,5 +879,99 @@ div.char-silhouette
 	width: 279dp;
 	height: 777dp;
 	decorator: image(../../../../Texture/Inventory/T_Inventory_Character.png contain);
+}
+
+/* ===================== DROP-VALID (green pulse on compatible equip slots during drag) ===================== */
+/* Layer separation: pulse animation lives on a child overlay element that NEVER changes
+   animation-name. On hover, the overlay is hidden via opacity:0 (keeps timeline running)
+   and the parent's existing :hover rules show gold. When hover ends, opacity returns to 1
+   and the pulse is still in sync with all other slots. */
+
+@keyframes equip-glow-pulse {
+	from { border-color: #2ecc71ff; }
+	50%  { border-color: #2ecc7166; }
+	to   { border-color: #2ecc71ff; }
+}
+
+@keyframes equip-glow-pulse-hex {
+	from { image-color: #2ecc71ff; }
+	50%  { image-color: #2ecc7166; }
+	to   { image-color: #2ecc71ff; }
+}
+
+/* --- Pulse overlay for square equip slots (equip-slot + equip-subslot) --- */
+
+div.pulse-overlay
+{
+	display: none;
+	position: absolute;
+	top: -3dp;
+	left: -3dp;
+	right: -3dp;
+	bottom: -3dp;
+	border: 3dp #2ecc71ff;
+}
+
+/* Allow overlay to extend beyond subslot bounds during drag */
+div.equip-subslot.drop-valid
+{
+	overflow: visible;
+}
+
+/* Show pulse overlay when parent has drop-valid */
+div.equip-slot.drop-valid div.pulse-overlay,
+div.equip-subslot.drop-valid div.pulse-overlay
+{
+	display: block;
+	animation: 1s linear infinite equip-glow-pulse;
+}
+
+/* Hide pulse on hover/selected — gold shows through from parent's existing :hover rules */
+div.equip-slot.drop-valid:hover div.pulse-overlay,
+div.equip-slot.drop-valid.selected-yellow div.pulse-overlay,
+div.equip-subslot.drop-valid:hover div.pulse-overlay,
+div.equip-subslot.drop-valid.selected-yellow div.pulse-overlay
+{
+	opacity: 0;
+}
+
+/* Hide pulse when drop-invalid overrides (red border takes priority) */
+div.equip-slot.drop-invalid div.pulse-overlay,
+div.equip-subslot.drop-invalid div.pulse-overlay
+{
+	display: none;
+}
+
+/* --- Hex pulse overlay for accessory slots (equip-slot-sm) --- */
+
+div.hex-pulse
+{
+	display: none;
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	decorator: image(/Game/Texture/Inventory/T_Talisman_Border.T_Talisman_Border contain);
+}
+
+div.equip-slot-sm.drop-valid div.hex-pulse
+{
+	display: block;
+	image-color: #2ecc71ff;
+	animation: 1s linear infinite equip-glow-pulse-hex;
+}
+
+/* Hide hex pulse on hover/selected — hex-fill shows gold via existing :hover rules */
+div.equip-slot-sm.drop-valid:hover div.hex-pulse,
+div.equip-slot-sm.drop-valid.selected-yellow div.hex-pulse
+{
+	opacity: 0;
+}
+
+/* Hide hex pulse when drop-invalid overrides */
+div.equip-slot-sm.drop-invalid div.hex-pulse
+{
+	display: none;
 }
 
