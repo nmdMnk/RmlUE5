@@ -4,9 +4,9 @@
 
 URmlInventoryWidget::URmlInventoryWidget()
 {
-	DocumentPath = TEXT("Content/RmlAssets/assets/Examples/Inventory/inventory.rml");
-	Fonts.Add({TEXT("Content/RmlAssets/assets/LatoLatin-Regular.ttf")});
-	Fonts.Add({TEXT("Content/RmlAssets/assets/Fonts/CaesarDressing-Regular.ttf")});
+	DocumentPath = TEXT("Content/UI/RmlUI/Documents/Examples/Inventory/inventory.rml");
+	Fonts.Add({TEXT("Content/UI/RmlUI/Fonts/LatoLatin-Regular.ttf")});
+	Fonts.Add({TEXT("Content/UI/RmlUI/Fonts/CaesarDressing-Regular.ttf")});
 
 	TWeakObjectPtr<URmlInventoryWidget> WeakThis(this);
 	OnContextReady = [WeakThis](Rml::Context* Ctx)

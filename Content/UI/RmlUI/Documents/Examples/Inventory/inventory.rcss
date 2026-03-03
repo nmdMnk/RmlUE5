@@ -97,13 +97,13 @@ span.currency-icon
 
 span.currency-icon.coin
 {
-	decorator: image(/Game/Texture/Inventory/T_Coin_Icon.T_Coin_Icon contain);
+	decorator: image(/Game/UI/RmlUI/Textures/Inventory/T_Coin_Icon.T_Coin_Icon contain);
 	image-color: #ffbf31ff;
 }
 
 span.currency-icon.gem
 {
-	decorator: image(/Game/Texture/Inventory/T_Gems_Icon.T_Gems_Icon contain);
+	decorator: image(/Game/UI/RmlUI/Textures/Inventory/T_Gems_Icon.T_Gems_Icon contain);
 	image-color: #49f6f8ff;
 }
 
@@ -732,14 +732,14 @@ div.equip-slot-sm div.hex-fill
 /* Fill / base shape (back layer) */
 div.equip-slot-sm div.hex-outline
 {
-	decorator: image(/Game/Texture/Inventory/T_Talisman_Empty.T_Talisman_Empty contain);
+	decorator: image(/Game/UI/RmlUI/Textures/Inventory/T_Talisman_Empty.T_Talisman_Empty contain);
 }
 
 /* Border ring (front layer — only visible when equipped) */
 div.equip-slot-sm div.hex-fill
 {
 	display: none;
-	decorator: image(/Game/Texture/Inventory/T_Talisman_Border.T_Talisman_Border contain);
+	decorator: image(/Game/UI/RmlUI/Textures/Inventory/T_Talisman_Border.T_Talisman_Border contain);
 }
 
 div.equip-slot-sm.equipped div.hex-fill
@@ -762,7 +762,7 @@ div.equip-slot-sm:hover div.hex-fill
 /* Locked hex slots: different texture, no hover, no label */
 div.equip-slot-sm.locked div.hex-outline
 {
-	decorator: image(/Game/Texture/Inventory/T_Talisman_Locked.T_Talisman_Locked contain);
+	decorator: image(/Game/UI/RmlUI/Textures/Inventory/T_Talisman_Locked.T_Talisman_Locked contain);
 }
 
 div.equip-slot-sm.locked:hover div.hex-fill
@@ -878,7 +878,7 @@ div.char-silhouette
 	top: 168dp;
 	width: 279dp;
 	height: 777dp;
-	decorator: image(../../../../Texture/Inventory/T_Inventory_Character.png contain);
+	decorator: image(../../../Textures/Inventory/T_Inventory_Character.png contain);
 }
 
 /* ===================== DROP-VALID (green pulse on compatible equip slots during drag) ===================== */
@@ -952,7 +952,7 @@ div.hex-pulse
 	top: 0;
 	right: 0;
 	bottom: 0;
-	decorator: image(/Game/Texture/Inventory/T_Talisman_Border.T_Talisman_Border contain);
+	decorator: image(/Game/UI/RmlUI/Textures/Inventory/T_Talisman_Border.T_Talisman_Border contain);
 }
 
 div.equip-slot-sm.drop-valid div.hex-pulse

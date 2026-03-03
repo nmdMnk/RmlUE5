@@ -3,7 +3,7 @@
 		<style>
 			@spritesheet theme
 			{
-				src: /Game/Texture/invader.invader;
+				src: /Game/UI/RmlUI/Textures/invader.invader;
 				
 				/**
 				   The following specifies a list of sprite names and associated rectangles into the image given above.

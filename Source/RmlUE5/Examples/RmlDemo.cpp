@@ -32,7 +32,7 @@ void URmlDemo::OnInit()
 	if (ElementFormControl* source = static_cast<ElementFormControl*>(BoundDocument->GetElementById("sandbox_rml_source")))
 	{
 		String value = source->GetValue();
-		value += "<p>Write your RML here</p>\n\n<!-- <img src=\"/Game/Texture/high_scores_alien_1.high_scores_alien_1\"/> -->";
+		value += "<p>Write your RML here</p>\n\n<!-- <img src=\"/Game/UI/RmlUI/Textures/high_scores_alien_1.high_scores_alien_1\"/> -->";
 		source->SetValue(value);
 	}
 
@@ -50,7 +50,7 @@ void URmlDemo::OnInit()
 		String style_sheet_content;
 		{
 			FileInterface* file_interface = GetFileInterface();
-			FString DocPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / TEXT("RmlAssets/assets/rml.rcss"));
+			FString DocPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / TEXT("UI/RmlUI/Documents/rml.rcss"));
 			FileHandle handle = file_interface->Open(TCHAR_TO_UTF8(*DocPath));
 			
 			size_t length = file_interface->Length(handle);

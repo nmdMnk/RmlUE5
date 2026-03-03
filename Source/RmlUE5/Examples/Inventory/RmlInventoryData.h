@@ -11,7 +11,7 @@ struct FRmlItemDef
 {
 	Rml::String Id;
 	Rml::String Name;
-	Rml::String Icon;          // full decorator value, e.g. "image(/Game/Texture/present.present)"
+	Rml::String Icon;          // full decorator value, e.g. "image(/Game/UI/RmlUI/Textures/present.present)"
 	Rml::String RarityColor;   // hex color, e.g. "#a335eeff"
 	Rml::String RarityName;    // "Common", "Epic", etc.
 	Rml::String TypeName;      // "Weapon", "Head", "Consumable", etc.

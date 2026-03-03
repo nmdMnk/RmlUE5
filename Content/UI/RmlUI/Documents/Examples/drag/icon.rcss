@@ -10,7 +10,7 @@ icon
 	padding: 60dp 10dp 0 10dp;
 	margin: 10dp;
 
-	decorator: image( /Game/Texture/present.present );
+	decorator: image( /Game/UI/RmlUI/Textures/present.present );
 
 	font-size: 12dp;
 	text-align: center;

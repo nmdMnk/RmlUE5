@@ -26,7 +26,7 @@ struct UERMLUI_API FRmlWarmupDocumentEntry
 {
 	GENERATED_BODY()
 
-	/** Full path to the RML document to pre-warm (e.g. C:/Project/Content/RmlAssets/demo.rml). */
+	/** Full path to the RML document to pre-warm (e.g. C:/Project/Content/UI/RmlUI/Documents/demo.rml). */
 	UPROPERTY(config, EditAnywhere, Category = "RmlUi")
 	FString DocumentPath;
 };

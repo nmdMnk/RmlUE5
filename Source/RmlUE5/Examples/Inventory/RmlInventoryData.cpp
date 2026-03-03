@@ -11,7 +11,7 @@ Rml::Vector<FRmlItemDef> GetItemDatabase()
 	return {
 		{
 			"void_sword", "Void Sword",
-			"image(/Game/Texture/high_scores_alien_1.high_scores_alien_1)",
+			"image(/Game/UI/RmlUI/Textures/high_scores_alien_1.high_scores_alien_1)",
 			"#a335eeff", "Epic", "Weapon",
 			"A blade forged in the void between stars",
 			{"ATK  +45", "CRIT +15%"},
@@ -19,7 +19,7 @@ Rml::Vector<FRmlItemDef> GetItemDatabase()
 		},
 		{
 			"iron_helm", "Iron Helm",
-			"image(/Game/Texture/high_scores_alien_2.high_scores_alien_2)",
+			"image(/Game/UI/RmlUI/Textures/high_scores_alien_2.high_scores_alien_2)",
 			"#888888ff", "Common", "Material",
 			"A battered helm, useful only for scrap metal",
 			{"Crafting material"},
@@ -27,7 +27,7 @@ Rml::Vector<FRmlItemDef> GetItemDatabase()
 		},
 		{
 			"arcane_orb", "Arcane Orb",
-			"image(/Game/Texture/high_scores_alien_1.high_scores_alien_1)",
+			"image(/Game/UI/RmlUI/Textures/high_scores_alien_1.high_scores_alien_1)",
 			"#ff8000ff", "Legendary", "Accessory",
 			"Pulses with inexhaustible cosmic energy",
 			{"MANA  +80", "SPELL +35%"},
@@ -35,7 +35,7 @@ Rml::Vector<FRmlItemDef> GetItemDatabase()
 		},
 		{
 			"ancient_shield", "Ancient Shield",
-			"image(/Game/Texture/high_scores_defender.high_scores_defender)",
+			"image(/Game/UI/RmlUI/Textures/high_scores_defender.high_scores_defender)",
 			"#0070ddff", "Rare", "Off Hand",
 			"Belonged to a fallen guardian",
 			{"DEF   +28", "BLOCK +20%"},
@@ -43,7 +43,7 @@ Rml::Vector<FRmlItemDef> GetItemDatabase()
 		},
 		{
 			"red_potion", "Red Potion",
-			"image(/Game/Texture/high_scores_alien_2.high_scores_alien_2)",
+			"image(/Game/UI/RmlUI/Textures/high_scores_alien_2.high_scores_alien_2)",
 			"#888888ff", "Common", "Consumable",
 			"Ruby liquid that restores the body",
 			{"HP +150  (use)"},
@@ -51,7 +51,7 @@ Rml::Vector<FRmlItemDef> GetItemDatabase()
 		},
 		{
 			"dark_crystal", "Dark Crystal",
-			"image(/Game/Texture/high_scores_alien_3.high_scores_alien_3)",
+			"image(/Game/UI/RmlUI/Textures/high_scores_alien_3.high_scores_alien_3)",
 			"#a335eeff", "Epic", "Accessory",
 			"Fragment of a dead star",
 			{"ALL  +15", "DARK +25%"},
@@ -59,7 +59,7 @@ Rml::Vector<FRmlItemDef> GetItemDatabase()
 		},
 		{
 			"wood_bow", "Wood Bow-Ie",
-			"image(/Game/Texture/high_scores_alien_3.high_scores_alien_3)",
+			"image(/Game/UI/RmlUI/Textures/high_scores_alien_3.high_scores_alien_3)",
 			"#1eff00ff", "Uncommon", "Ranged",
 			"A simple but reliable hunting bow",
 			{"ATK  +18", "RNG  +12"},
@@ -67,7 +67,7 @@ Rml::Vector<FRmlItemDef> GetItemDatabase()
 		},
 		{
 			"ancient_amulet", "Ancient Amulet",
-			"image(/Game/Texture/high_scores_alien_2.high_scores_alien_2)",
+			"image(/Game/UI/RmlUI/Textures/high_scores_alien_2.high_scores_alien_2)",
 			"#1eff00ff", "Uncommon", "Accessory",
 			"Incomprehensible hieroglyphs carved in bronze",
 			{"INT  +22", "MP   +40"},
@@ -75,7 +75,7 @@ Rml::Vector<FRmlItemDef> GetItemDatabase()
 		},
 		{
 			"void_core_mod", "Runebound Sigil",
-			"image(/Game/Texture/high_scores_defender.high_scores_defender)",
+			"image(/Game/UI/RmlUI/Textures/high_scores_defender.high_scores_defender)",
 			"#0070ddff", "Rare", "Weapon Mod",
 			"An engraved sigil that binds steel to forgotten runes",
 			{"ATK +11", "ARC +14"},
@@ -83,7 +83,7 @@ Rml::Vector<FRmlItemDef> GetItemDatabase()
 		},
 		{
 			"falcon_scope_mod", "Starseeker Lens",
-			"image(/Game/Texture/high_scores_alien_3.high_scores_alien_3)",
+			"image(/Game/UI/RmlUI/Textures/high_scores_alien_3.high_scores_alien_3)",
 			"#a335eeff", "Epic", "Ranged Weapon Mod",
 			"A crystal lens that guides arrows toward their omen",
 			{"RNG +18", "CRIT +8%"},
@@ -91,7 +91,7 @@ Rml::Vector<FRmlItemDef> GetItemDatabase()
 		},
 		{
 			"crimson_cloth", "Crimson Cloth",
-			"image(/Game/Texture/high_scores_defender.high_scores_defender)",
+			"image(/Game/UI/RmlUI/Textures/high_scores_defender.high_scores_defender)",
 			"#888888ff", "Common", "Material",
 			"A finely woven piece of crimson fabric",
 			{"Crafting material"},

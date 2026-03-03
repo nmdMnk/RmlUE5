@@ -6,7 +6,7 @@
 <style>
 @spritesheet effects-sheet
 {
-	src: /Game/Texture/invader.invader;
+	src: /Game/UI/RmlUI/Textures/invader.invader;
 	icon-invader: 179px 152px 51px 39px;
 }
 

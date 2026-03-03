@@ -40,14 +40,14 @@ void ARmlUE5GameModeBase::BeginPlay()
 	Rml::SetRenderInterface(&RmlRenderInterface);
 
 	// load font face
-	FString FontPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()) / TEXT("RmlAssets/assets/");
+	FString FontPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir()) / TEXT("UI/RmlUI/Fonts/");
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("LatoLatin-Regular.ttf"))));
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("LatoLatin-Bold.ttf"))));
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("LatoLatin-Italic.ttf"))));
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("LatoLatin-BoldItalic.ttf"))));
-	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("Fonts/CaesarDressing-Regular.ttf"))));
+	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("CaesarDressing-Regular.ttf"))));
 	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("NotoEmoji-Regular.ttf"))), true);
-	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("Fonts/NotoSansSC-Regular.ttf"))), true);
+	Rml::LoadFontFace(TCHAR_TO_UTF8(*(FontPath + TEXT("NotoSansSC-Regular.ttf"))), true);
 	
 	// create context with initial viewport dimensions so percentage-based
 	// layouts (e.g. width: 80%) resolve correctly at document load time.
@@ -68,7 +68,7 @@ void ARmlUE5GameModeBase::BeginPlay()
 #endif
 
 	// load demo selector
-	FString BasePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / TEXT("RmlAssets/assets/Examples/"));
+	FString BasePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() / TEXT("UI/RmlUI/Documents/Examples/"));
 	DemoSelector = NewObject<URmlDocument>(this);
 	if (DemoSelector->Init(Context, BasePath + TEXT("selectbar.rml")))
 	{

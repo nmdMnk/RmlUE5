@@ -5,7 +5,7 @@
 <style>
 @spritesheet demo-sheet
 {
-	src: /Game/Texture/invader.invader;
+	src: /Game/UI/RmlUI/Textures/invader.invader;
 
 	window-outer: 0px 0px 144px 151px;
 
@@ -156,7 +156,7 @@ p.title
 {
 	width: 64dp;
 	height: 64dp;
-	decorator: image( /Game/Texture/high_scores_alien_1.high_scores_alien_1 );
+	decorator: image( /Game/UI/RmlUI/Textures/high_scores_alien_1.high_scores_alien_1 );
 }
 #decorators .image-invader
 {
@@ -223,9 +223,9 @@ p.title
 .fit-cover      { decorator: image( icon-invader cover      ); }
 .fit-scale-none { decorator: image( icon-invader scale-none ); }
 .fit-scale-down { decorator: image( icon-invader scale-down ); }
-.fit-repeat   { decorator: image( /Game/Texture/alien_small.alien_small repeat ); }
-.fit-repeat-x { decorator: image( /Game/Texture/alien_small.alien_small repeat-x ); }
-.fit-repeat-y { decorator: image( /Game/Texture/alien_small.alien_small repeat-y ); }
+.fit-repeat   { decorator: image( /Game/UI/RmlUI/Textures/alien_small.alien_small repeat ); }
+.fit-repeat-x { decorator: image( /Game/UI/RmlUI/Textures/alien_small.alien_small repeat-x ); }
+.fit-repeat-y { decorator: image( /Game/UI/RmlUI/Textures/alien_small.alien_small repeat-y ); }
 .orientation-vertical   { decorator: image( icon-invader flip-vertical   scale-none ); }
 .orientation-horizontal { decorator: image( icon-invader flip-horizontal scale-none ); }
 .orientation-rotate     { decorator: image( icon-invader rotate-180      scale-none ); }
@@ -746,16 +746,16 @@ form .nav-auto, form input.checkbox, form input.radio
 
 	<h1>Image elements</h1>
 	<div class="center">
-		<img src="/Game/Texture/high_scores_defender.high_scores_defender" class="clickable" onclick="change_color"/>
+		<img src="/Game/UI/RmlUI/Textures/high_scores_defender.high_scores_defender" class="clickable" onclick="change_color"/>
 		<img sprite="icon-game" style="vertical-align: 10dp;"/>
-		<img src="/Game/Texture/high_scores_defender.high_scores_defender" style="image-color: #fc5;" rect="0 0 64 64"/>
-		<img src="/Game/Texture/high_scores_defender.high_scores_defender" style="image-color: #9c5;" rect="64 0 64 64"/>
+		<img src="/Game/UI/RmlUI/Textures/high_scores_defender.high_scores_defender" style="image-color: #fc5;" rect="0 0 64 64"/>
+		<img src="/Game/UI/RmlUI/Textures/high_scores_defender.high_scores_defender" style="image-color: #9c5;" rect="64 0 64 64"/>
 	</div>
 	<p>The 'img' elements are separate from decorators, but we describe them here for completeness. They can be declared as in html. Additionally, a 'rect' attribute can be used to crop the image. The element can also display sprites declared in a sprite sheet.</p>
 
 	<h1>Sprite sheets</h1>
 	<p>Sprite sheets are defined by an image source and a collection of sprites, and can be declared in RCSS. Sprites are essentially rectangles into the given image. For example, the following image</p>
-	<img src="/Game/Texture/invader.invader" rect="0 0 500 435" style="margin-top: 10dp; margin-bottom: 10dp;"/>
+	<img src="/Game/UI/RmlUI/Textures/invader.invader" rect="0 0 500 435" style="margin-top: 10dp; margin-bottom: 10dp;"/>
 	<p>is used to render most sprites in this demo. Sprites can be used in decorators and image elements as if they were separate images.</p>
 </panel>
 <tab>Font effects</tab>
@@ -783,10 +783,10 @@ form .nav-auto, form input.checkbox, form input.radio
 	<h1>Transitions</h1>
 	<p>Hover over the following to see an animation performed by the transition property in RCSS.</p>
 	<div id="transition">
-		<img class="alien alien1" src="/Game/Texture/high_scores_alien_1.high_scores_alien_1"/>
-		<img class="alien alien2" src="/Game/Texture/high_scores_alien_2.high_scores_alien_2"/>
-		<img class="alien alien3" src="/Game/Texture/high_scores_alien_3.high_scores_alien_3"/>
-		<div class="ray"><img class="defender" src="/Game/Texture/high_scores_defender.high_scores_defender"/></div>
+		<img class="alien alien1" src="/Game/UI/RmlUI/Textures/high_scores_alien_1.high_scores_alien_1"/>
+		<img class="alien alien2" src="/Game/UI/RmlUI/Textures/high_scores_alien_2.high_scores_alien_2"/>
+		<img class="alien alien3" src="/Game/UI/RmlUI/Textures/high_scores_alien_3.high_scores_alien_3"/>
+		<div class="ray"><img class="defender" src="/Game/UI/RmlUI/Textures/high_scores_defender.high_scores_defender"/></div>
 		<div style="height: 110%;"/>
 	</div>
 

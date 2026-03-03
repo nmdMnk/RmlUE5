@@ -1,6 +1,6 @@
 @spritesheet theme
 {
-	src: /Game/Texture/invader.invader;
+	src: /Game/UI/RmlUI/Textures/invader.invader;
 
 	/* For high dpi screens, designates the scaling it is intended to be shown at. */
 	resolution: 1x;

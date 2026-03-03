@@ -13,7 +13,7 @@ struct UERMLUI_API FRmlFontEntry
 {
 	GENERATED_BODY()
 
-	/** Font file path, relative to project root (e.g. Content/RmlAssets/assets/LatoLatin-Regular.ttf). */
+	/** Font file path, relative to project root (e.g. Content/UI/RmlUI/Fonts/LatoLatin-Regular.ttf). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RmlUi")
 	FString FontPath;
 };
@@ -38,7 +38,7 @@ public:
 
 	/**
 	 * Font faces to load before the document is shown.
-	 * Paths are relative to the project root (e.g. Content/RmlAssets/assets/LatoLatin-Regular.ttf).
+	 * Paths are relative to the project root (e.g. Content/UI/RmlUI/Fonts/LatoLatin-Regular.ttf).
 	 * Fonts are global in RmlUi — loading them here makes them available to all widgets.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "RmlUi")
